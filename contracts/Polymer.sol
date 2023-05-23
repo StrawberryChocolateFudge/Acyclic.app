@@ -55,10 +55,10 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
         _name = name_;
         _symbol = name_;
         _token1Addr = token1Addr_;
-        _token1Rate = token1Rate_; // The token1Amount needs to be calculated like a rate
+        _token1Rate = token1Rate_; 
         _token1Decimals = token1Decimals_;
         _token2Addr = token2Addr_;
-        _token2Rate = token2Rate_; // The token1Amount needs to be calculated like a rate
+        _token2Rate = token2Rate_; 
         _token2Decimals = token2Decimals_;
     }
 
