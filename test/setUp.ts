@@ -29,7 +29,7 @@ export async function setUpPLRM(): Promise<any> {
 
     // Then deploy the PolymerRegistry!
     const registryFactory = await ethers.getContractFactory("PolymerRegistry");
-    const registryDeploy = await registryFactory.deploy("H-PLMR"); // H-PLMR stands for Hardhat-PLMR
+    const registryDeploy = await registryFactory.deploy(500); // 500 for a 0.5 percent flash loan fee
     const registry = await registryDeploy.deployed();
 
     return { owner, BTC, USD, EUR, ETH, alice, bob, registry }

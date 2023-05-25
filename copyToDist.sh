@@ -1,0 +1,1 @@
+cp -r frontend/imgs/ dist/imgs
