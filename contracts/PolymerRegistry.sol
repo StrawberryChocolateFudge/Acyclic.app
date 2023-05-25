@@ -1,9 +1,9 @@
 //SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.12;
+pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./Polymer.sol";
 
 struct RegisteredPolymer {
@@ -20,8 +20,16 @@ struct RegisteredPolymer {
 }
 
 contract PolymerRegistry {
-    string public prefix; // The prefix is PLMR and starts different for each chain, eg P-PLMR for Polygon and B-PLMR for BSC,E-PRML for Eth etc
+    using SafeMath for uint256;
+    bytes32 private constant _ONDEPLOYRETURN =
+        keccak256("PolymerRegistry.onCreateNewPLMR");
 
+    error InvalidDecimals();
+    error OnlyOwner();
+
+    string private prefix = "PLMR";
+    address private _owner;
+    uint256 public flashFee; // The fee for the flash loans
     uint256 public lastIndex; // The index of the last PLMR contract deployed!
 
     mapping(uint256 => RegisteredPolymer) public polymers; // The registered polymer contracts
@@ -39,13 +47,15 @@ contract PolymerRegistry {
         string plmrName
     );
 
-    /**
-     *  The constructor takes a network specific prefix, that will be appended to the polymer contract's name!
-     * _prefix Sets the prefix, the schema should be P-PLMR for Polygon, B-PLMR for BSC etc!
-     */
-    constructor(string memory _prefix) {
-        prefix = _prefix;
+    constructor(uint256 _flashFee) {
         lastIndex = 0;
+        _owner = msg.sender;
+        flashFee = _flashFee; // it's 500 for a 0.2% fee we divide, amount/flashFee
+    }
+
+    function setFlashFee(uint256 newFee) external {
+        if (msg.sender != _owner) revert OnlyOwner();
+        flashFee = newFee;
     }
 
     function createNewPLMR(
@@ -56,8 +66,10 @@ contract PolymerRegistry {
         uint256 token2Rate,
         uint8 token2Decimals
     ) external {
-        require(token1Decimals < 18, "Invalid Divider");
-        require(token2Decimals < 18, "Invalid Divider");
+        if (!(token1Decimals < ERC20(token1Addr).decimals()))
+            revert InvalidDecimals();
+        if (!(token2Decimals < ERC20(token2Addr).decimals()))
+            revert InvalidDecimals();
 
         lastIndex++;
         string memory index = Strings.toString(lastIndex);
@@ -100,5 +112,17 @@ contract PolymerRegistry {
             token2Decimals,
             plmrName
         );
+    }
+
+    function onCreateNewPLMR() external pure returns (bytes32) {
+        return _ONDEPLOYRETURN;
+    }
+
+    function getFlashLoanFee() external view returns (uint256) {
+        return flashFee;
+    }
+
+    function getFlashloanFeeReceiver() external view returns (address) {
+        return _owner;
     }
 }
