@@ -6,6 +6,15 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./Polymer.sol";
 
+interface IVerifier {
+    function verifyProof(
+        uint256[2] memory a,
+        uint256[2][2] memory b,
+        uint256[2] memory c,
+        uint256[3] memory _input
+    ) external returns (bool);
+}
+
 struct RegisteredPolymer {
     address token1Addr;
     uint256 token1Rate;
@@ -17,6 +26,21 @@ struct RegisteredPolymer {
     string token2Ticker;
     string ticker;
     address polymerAddress;
+}
+
+enum BridgeDirection {
+    TO,
+    FROM
+}
+
+struct BridgedAsset {
+    address creator;
+    bytes32 commitment;
+    bytes32 nullfifierHash;
+    BridgeDirection direction;
+    uint256 chainId;
+    uint256 polymerAddress;
+    uint256 amount;
 }
 
 contract PolymerRegistry {
@@ -33,6 +57,8 @@ contract PolymerRegistry {
     uint256 public lastIndex; // The index of the last PLMR contract deployed!
 
     mapping(uint256 => RegisteredPolymer) public polymers; // The registered polymer contracts
+
+    mapping(uint256 => BridgedAsset) public bridgedAssets;
 
     event NewPLMR(
         address contractAddress,
@@ -64,8 +90,10 @@ contract PolymerRegistry {
         uint8 token1Decimals,
         address token2Addr,
         uint256 token2Rate,
-        uint8 token2Decimals
+        uint8 token2Decimals,
+        bool mintable // If the contract is mintable then we can deposit and redeem else it's just for bridging
     ) external {
+        if (msg.sender != _owner) revert OnlyOwner();
         if (!(token1Decimals < ERC20(token1Addr).decimals()))
             revert InvalidDecimals();
         if (!(token2Decimals < ERC20(token2Addr).decimals()))
@@ -82,7 +110,8 @@ contract PolymerRegistry {
             token1Decimals,
             token2Addr,
             token2Rate,
-            token2Decimals
+            token2Decimals,
+            mintable
         );
 
         string memory token1Ticker = ERC20(token1Addr).name();
@@ -125,4 +154,21 @@ contract PolymerRegistry {
     function getFlashloanFeeReceiver() external view returns (address) {
         return _owner;
     }
+
+    // Maybe add here cross-chain messaging for the derivatives
+    // the registry could call the child contracts and mint bridged asset
+    // or the registry could initiate asset bridging
+
+    function createBridgedAsset(
+        uint256 toChainId,
+        uint256 amount,
+        uint256 polymerId
+    ) external {
+        address polymerAddress = polymers[polymerId].polymerAddress;
+        Polymer(polymerAddress).zkBridgeAssetBurn(msg.sender, amount);
+        // I just need to broadcast
+    }
+
+    // USE ZKSNARK TO VERIFY A WITHDRAW AND MINT THE ASSET
+    function claimBridgedAsset() external {}
 }

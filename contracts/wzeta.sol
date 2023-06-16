@@ -10,7 +10,8 @@ import "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
 import "./PolymerRegistry.sol";
 
-// PolymerX is a simple ERC-20 contract, the tokens have no initial balance and they are minted for ETH
+// 
+// This is a simple Wrapped Zeta contract that supports flash loans
 contract WZETA is Context, IERC20, IERC20Metadata, ReentrancyGuard {
     bytes32 private constant _ONDEPLOYRETURN =
         keccak256("PolymerRegistry.onCreateNewPLMR");

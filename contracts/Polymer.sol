@@ -41,6 +41,8 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
 
     address private registryAddress;
 
+    bool public mintable;
+
     event MintPLMR(address to, uint256 amount);
     event RedeemPLMR(address to, uint256 amount);
 
@@ -54,6 +56,7 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
      * @param token2Addr_ Sets the address of the token2 used for backing this polymer token
        @param token2Rate_ Sets the rate of tokens needed from token2 to back this polymer token
        @param token2Decimals_ is used to calculate rates where decimalsare needed!
+       @param mintable_ can the asset be minted or it's only zkBridged?
      */
     constructor(
         string memory name_,
@@ -62,7 +65,8 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
         uint8 token1Decimals_,
         address token2Addr_,
         uint256 token2Rate_,
-        uint8 token2Decimals_
+        uint8 token2Decimals_,
+        bool mintable_
     ) {
         // the name and the symbos are the same for PLMR tokens
         _name = name_;
@@ -73,12 +77,24 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
         _token2Addr = token2Addr_;
         _token2Rate = token2Rate_;
         _token2Decimals = token2Decimals_;
+        mintable = mintable_;
         // Will make sure the deployer is a contract because that's where the flashLoan fees will come from!
         require(
             PolymerRegistry(msg.sender).onCreateNewPLMR() == _ONDEPLOYRETURN,
             "Deployer must be contract"
         );
         registryAddress = msg.sender;
+    }
+
+    function zkBridgeAssetBurn(address from, uint256 amount) external {
+        require(msg.sender == registryAddress, "Only Registry");
+        // Burn the tokens, the burn function checks if the owner actually owns the balance!
+        _burn(from, amount);
+    }
+
+    function mintBridgedAsset(address to, uint256 amount) external {
+        require(msg.sender == registryAddress, "Only Registry");
+        _mint(to, amount);
     }
 
     function calculateTokenDeposits(
@@ -92,6 +108,7 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
 
     // Add a mint function that requires transfer of token1 and token2 to this contract and then mints 1 token for it
     function mintPLMR(uint256 amount) external nonReentrant {
+        require(mintable, "Can't mint");
         // Transfer tokens here from the sender's address, calculate how much I need
         address owner = _msgSender();
 
@@ -126,6 +143,7 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
 
     // Add a redeem function that requires the user to have tokens and will burn it and transfer the backing back to the sender
     function redeemPLMR(uint256 amount) external nonReentrant {
+        require(mintable, "Can't redeem");
         require(!flashLoanInProgress, "Can't redeem with flash loan");
         address owner = _msgSender();
         // Burn the tokens, the burn function checks if the owner actually owns the balance!
@@ -306,7 +324,7 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
      * @dev See {IERC20-totalSupply}.
      */
     function totalSupply() public view virtual override returns (uint256) {
-        return _totalSupply; //TODO: Add flashMinted!
+        return _totalSupply;
     }
 
     /**

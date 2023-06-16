@@ -115,7 +115,6 @@ export function PLMRActions(props: PLMRActionsProps) {
     } else if (props.selected === "WZETA") {
         return <Box sx={{ width: '100%' }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                <Typography variant="body1" component="div">Wrap Zeta</Typography>
                 <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
                     <Tab label="Wrap" />
                     <Tab label="Unwrap" />
@@ -135,7 +134,6 @@ export function PLMRActions(props: PLMRActionsProps) {
     } else if (props.selected === "PLMRX") {
         return <Box sx={{ width: '100%' }}>
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                <Typography variant="body1" component="div">Wrap Zeta</Typography>
                 <Tabs value={value} onChange={handleChange} aria-label="basic tabs example">
                     <Tab label="Buy" />
                     <Tab label="Flash Loan" />
@@ -143,7 +141,6 @@ export function PLMRActions(props: PLMRActionsProps) {
             </Box>
             <TabPanel value={value} index={0}>
                 <Typography sx={{ margin: "0 auto", paddingBottom: "20px" }} variant="body1" component="div">Polymer X</Typography>
-                <Typography sx={{ margin: "0 auto", paddingBottom: "20px" }} variant="subtitle2" component="div">Token Sale</Typography>
                 <TextField type={"number"} autoComplete="off" label="Amount" variant="outlined" sx={{ width: "100%", marginTop: "10px" }}></TextField>
                 <Button>Buy</Button>            </TabPanel>
             <TabPanel value={value} index={1}>

@@ -32,22 +32,51 @@ contract PolymerX is Context, IERC20, IERC20Metadata, ReentrancyGuard {
 
     event Buy(address indexed dst, uint wad);
 
-    address registryAddress;
+    address private registryAddress;
 
-    constructor(address _registryAddress) {
+    address private _owner;
+    uint256 private saleRate;
+    bool public salePaused;
+    bool public stopSaleForever;
+
+    constructor(address _registryAddress, uint256 _saleRate) {
         require(
             PolymerRegistry(registryAddress).onCreateNewPLMR() ==
                 _ONDEPLOYRETURN,
             "Invalid registry address"
         );
         registryAddress = _registryAddress;
+        _owner = msg.sender;
+        saleRate = _saleRate;
+        salePaused = true;
+        stopSaleForever = false;
+    }
+
+    function calculateAmountMinted(uint256 _wei) public view returns (uint256) {
+        return _wei.mul(saleRate);
+    }
+
+    // Owner can decide to pause the sale and change the rate
+    function setMintParams(uint256 _saleRate, bool salePaused_) public {
+        require(msg.sender == _owner, "Only owner");
+        saleRate = _saleRate;
+        salePaused = salePaused_;
+    }
+
+    function disableSale() public {
+        require(msg.sender == _owner, "Only Owner");
+        stopSaleForever = true;
     }
 
     function buy() public payable {
+        // The minting can be done forever or just paused
+        require(!stopSaleForever, "Mintig over");
+        require(!salePaused, "Sale paused");
         // PolymerX is sold for eth, for now. Just can just mint it if you pay.
         require(msg.value != 0, "Invalid value");
-        _mint(msg.sender, msg.value);
         address reciever = _flashFeeReceiver();
+        uint256 toMint = calculateAmountMinted(msg.value);
+        _mint(msg.sender, toMint);
         Address.sendValue(payable(reciever), msg.value);
         emit Buy(msg.sender, msg.value);
     }
