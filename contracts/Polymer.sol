@@ -41,7 +41,6 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
 
     address private registryAddress;
 
-    bool public mintable;
 
     event MintPLMR(address to, uint256 amount);
     event RedeemPLMR(address to, uint256 amount);
@@ -49,54 +48,42 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
     bool private flashLoanInProgress = false; // A lock to avoid redeeming when a flash loan is in progress
 
     /**
-     * @dev Sets the same for {name} and {symbol}.
+     * @dev Create a new Polymer token
+     * @param name_ Sets the name and the symbol. name_[0] is the name of the token, name_[1] is the symbol
      * @param token1Addr_ Sets the address of the token used for backing this token
      * @param token1Rate_ Sets the rate of tokens needed to be transferred here to back this token from token1
      * @param token1Decimals_ is used to calculate amounts when decimals are needed, like a rate of 0.01
      * @param token2Addr_ Sets the address of the token2 used for backing this polymer token
        @param token2Rate_ Sets the rate of tokens needed from token2 to back this polymer token
        @param token2Decimals_ is used to calculate rates where decimalsare needed!
-       @param mintable_ can the asset be minted or it's only zkBridged?
      */
     constructor(
-        string memory name_,
+        string[] memory name_,
         address token1Addr_,
         uint256 token1Rate_,
         uint8 token1Decimals_,
         address token2Addr_,
         uint256 token2Rate_,
-        uint8 token2Decimals_,
-        bool mintable_
+        uint8 token2Decimals_
     ) {
         // the name and the symbos are the same for PLMR tokens
-        _name = name_;
-        _symbol = name_;
+        _name = name_[0];
+        _symbol = name_[1];
         _token1Addr = token1Addr_;
         _token1Rate = token1Rate_;
         _token1Decimals = token1Decimals_;
         _token2Addr = token2Addr_;
         _token2Rate = token2Rate_;
         _token2Decimals = token2Decimals_;
-        mintable = mintable_;
         // Will make sure the deployer is a contract because that's where the flashLoan fees will come from!
         require(
             PolymerRegistry(msg.sender).onCreateNewPLMR() == _ONDEPLOYRETURN,
-            "Deployer must be contract"
+            "Only Registry"
         );
         registryAddress = msg.sender;
     }
 
-    function zkBridgeAssetBurn(address from, uint256 amount) external {
-        require(msg.sender == registryAddress, "Only Registry");
-        // Burn the tokens, the burn function checks if the owner actually owns the balance!
-        _burn(from, amount);
-    }
-
-    function mintBridgedAsset(address to, uint256 amount) external {
-        require(msg.sender == registryAddress, "Only Registry");
-        _mint(to, amount);
-    }
-
+    //TODO: SHOULD RETURN A TUPPLE WITH A FEE!
     function calculateTokenDeposits(
         uint256 amount, // The amount of Polymer tokens in WEI
         uint256 rate, // The rate of the token deposit
@@ -108,9 +95,11 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
 
     // Add a mint function that requires transfer of token1 and token2 to this contract and then mints 1 token for it
     function mintPLMR(uint256 amount) external nonReentrant {
-        require(mintable, "Can't mint");
         // Transfer tokens here from the sender's address, calculate how much I need
         address owner = _msgSender();
+
+        //TODO: Add a 0.02% fee to both of the pair
+
 
         uint256 token1Deposited = calculateTokenDeposits(
             amount,
@@ -143,7 +132,6 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
 
     // Add a redeem function that requires the user to have tokens and will burn it and transfer the backing back to the sender
     function redeemPLMR(uint256 amount) external nonReentrant {
-        require(mintable, "Can't redeem");
         require(!flashLoanInProgress, "Can't redeem with flash loan");
         address owner = _msgSender();
         // Burn the tokens, the burn function checks if the owner actually owns the balance!

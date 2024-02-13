@@ -1,5 +1,8 @@
 import ethers from "ethers"
 import MetaMaskOnboarding from "@metamask/onboarding";
+
+//TODO: ARBITRUM ONLY!!
+
 enum NetworkNames {
     BSC_TESTNET = "Binance Smart Chain Testnet",
     MUMBAI_TESTNET = "Mumbai Testnet",

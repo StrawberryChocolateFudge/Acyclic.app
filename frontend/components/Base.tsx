@@ -14,10 +14,8 @@ export function Base() {
     const [selectedAction, setSelectedAction] = React.useState("new");
     const [currentPage, setCurrentPage] = React.useState(CurrentPage.DerivativesPage);
 
-
+    //TODO: GET THIS FROM THE REGISTRY CONTRACT!!
     const options = [
-        { name: "WZETA", value: "WZETA", address: "" },
-        { name: "PLMRX", value: "PLMRX", address: "" },
         { name: "PLMR1", value: "PLMR1", address: "" },
         { name: "PLMR2", value: "PLMR2", address: "" },
         { name: "PLMR3", value: "PLMR3", address: "" },
@@ -33,7 +31,6 @@ export function Base() {
     if (currentPage === CurrentPage.DerivativesPage) {
         return <Paper elevation={3} sx={{
             width: "500px",
-            height: "800px",
             borderRadius: "25px",
             paddingTop: "30px",
             paddingLeft: "20px",
@@ -61,10 +58,12 @@ export function Base() {
             <Stack direction="row" justifyContent="space-between">
                 <div>
                     <img src="/imgs/logo.png" width="50px" style={{ boxShadow: "rgba(0, 0, 0, 0.35) 0px 5px 15px" }} />
-                    <Typography sx={{ marginBottom: "5px" }} variant="h6" component="div"> Polymer - Assets</Typography>
+                    <Typography sx={{ marginBottom: "5px" }} variant="h6" component="div"> Polymer - Registered Assets</Typography>
                 </div>
                 <Button variant="outlined" onClick={setPage(CurrentPage.DerivativesPage)}>Derivatives</Button>
             </Stack>
+
+            {/* //TODO DO TAGS HERE TO TRIGGER WITH REQUEST NEW PAIR */}
             <AssetsActions options={options}></AssetsActions>
         </Paper >
     }

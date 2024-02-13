@@ -61,7 +61,7 @@ function SimpleDialog(props: SimpleDialogProps) {
 
     return (
         <Dialog fullScreen sx={{ width: "100%", height: "100%" }} onClose={handleClose} open={open}>
-            <DialogTitle>Value Graph</DialogTitle>
+            <DialogTitle>Directed Acyclic Graph </DialogTitle>
             <div id="treeWrapper" style={{ width: "100%", height: "100%" }}>
                 <Tree data={orgChart} translate={{ x: width / 4, y: height / 3 }} />
             </div>
