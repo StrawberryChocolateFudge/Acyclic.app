@@ -8,12 +8,14 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Polymer.sol";
 import "./RequestedTokens.sol";
 
-//  #####  ######  ####  #  ####  ##### #####  #   #
-//  #    # #      #    # # #        #   #    #  # #
-//  #    # #####  #      #  ####    #   #    #   #
-//  #####  #      #  ### #      #   #   #####    #
-//  #   #  #      #    # # #    #   #   #   #    #
-//  #    # ######  ####  #  ####    #   #    #   #
+//  _______  _______  _______ _________ _______ _________ _______
+// (  ____ )(  ____ \(  ____ \\__   __/(  ____ \\__   __/(  ____ )|\     /|
+// | (    )|| (    \/| (    \/   ) (   | (    \/   ) (   | (    )|( \   / )
+// | (____)|| (__    | |         | |   | (_____    | |   | (____)| \ (_) /
+// |     __)|  __)   | | ____    | |   (_____  )   | |   |     __)  \   /
+// | (\ (   | (      | | \_  )   | |         ) |   | |   | (\ (      ) (
+// | ) \ \__| (____/\| (___) |___) (___/\____) |   | |   | ) \ \__   | |
+// |/   \__/(_______/(_______)\_______/\_______)   )_(   |/   \__/   \_/
 
 // This contract is used to deploy new Polymer contracts to wrap tokens with.
 // The contract also controls the flash loan fee and transfers the fee to the owner
@@ -29,39 +31,44 @@ contract PolymerRegistry is Ownable {
 
     string private prefix = "PLMR"; // The prefix of the deployed token contracts
     address private feeReciever; // The address of the flash loan reciever
-    uint256 private flashFee; // The fee for the flash loans
+    uint256 private depositFeeDivider; // The fee for the deposit
     uint256 public lastIndex; // The index of the last PLMR contract deployed!
 
     RequestedTokens private requestedTokens;
 
-    mapping(uint256 => address) public polymers; // The registered polymer contracts
+    mapping(uint256 => address) public polymers; // The registered polymer contract addresses
 
     mapping(address => bool) public isPolymerAddress; // A helper mapping to check if an address is registered here
 
-    event NewPLMR(
-        address contractAddress,
-        address token1Addr,
-        string token1Ticker,
-        uint256 token1Rate,
-        uint8 token1Decimals,
-        address token2Addr,
-        string token2Ticker,
-        uint256 token2Rate,
-        uint8 token2Decimals,
-        string plmrName
-    );
+    // A struct used for easily accessing all saved Polymers on the Front end!
+    struct PLMR {
+        address polymerAddress;
+        address token1Addr;
+        string token1Ticker;
+        uint256 token1Rate;
+        uint8 token1DecimalShift;
+        address token2Addr;
+        string token2Ticker;
+        uint256 token2Rate;
+        uint8 token2DecimalShift;
+        string plmrName;
+    }
 
-    constructor(uint256 _flashFee, address requestedTokens_) {
+    PLMR[] private allpolymers;
+
+    event NewPLMR(PLMR);
+
+    constructor(uint256 _depositFeeDivider, address requestedTokens_) {
         lastIndex = 0;
         feeReciever = msg.sender;
-        flashFee = _flashFee; // it's 500 for a 0.2% fee we divide, amount/flashFee
+        depositFeeDivider = _depositFeeDivider; // it's 500 for a 0.2% fee we divide, amount/fee
         // The
         requestedTokens = RequestedTokens(requestedTokens_);
     }
 
     // The owner can set the flash loan fee
-    function setFlashFee(uint256 newFee) external onlyOwner {
-        flashFee = newFee;
+    function setFeeDivider(uint256 newFeeDivider) external onlyOwner {
+        depositFeeDivider = newFeeDivider;
     }
 
     // The owner can update the address that recieves the fees
@@ -85,23 +92,23 @@ contract PolymerRegistry is Ownable {
           The tokens must be either an already registered contract or a deployed PLMR contract!
     @param token1Addr the address of the  token1 
     @param token1Rate the rate of the token1
-    @param token1Decimals the decimals of the token1 is used for calculating the rate
+    @param token1DecimalShift the amount we shift the decimals of the token1 when for calculating the rate
     @param token2Addr the address of the token2
     @param token2Rate the rate of the token2
-    @param token2Decimals The decimals are used to calculate the rate
+    @param token2DecimalShift The amount we shift the decimals of the token2 when calculating deposits and redemptions
      */
 
     function createNewPLMR(
         address token1Addr,
         uint256 token1Rate,
-        uint8 token1Decimals,
+        uint8 token1DecimalShift,
         address token2Addr,
         uint256 token2Rate,
-        uint8 token2Decimals
+        uint8 token2DecimalShift
     ) external {
-        if (!(token1Decimals < ERC20(token1Addr).decimals()))
+        if (!(token1DecimalShift <= ERC20(token1Addr).decimals()))
             revert InvalidDecimals();
-        if (!(token2Decimals < ERC20(token2Addr).decimals()))
+        if (!(token2DecimalShift <= ERC20(token2Addr).decimals()))
             revert InvalidDecimals();
 
         if (token1Rate == 0) revert InvalidRate();
@@ -142,35 +149,45 @@ contract PolymerRegistry is Ownable {
             plmrName,
             [token1Addr, token2Addr],
             [token1Rate, token2Rate],
-            [token1Decimals, token2Decimals]
+            [token1DecimalShift, token2DecimalShift]
         );
 
         // Save the address of the deployed contract
         polymers[lastIndex] = address(p);
-
-        emit NewPLMR(
-            address(p),
-            token1Addr,
-            ERC20(token1Addr).name(),
-            token1Rate,
-            ERC20(token1Addr).decimals(),
-            token2Addr,
-            ERC20(token2Addr).name(),
-            token2Rate,
-            ERC20(token2Addr).decimals(),
-            plmrName[1]
+        saveNewPLMRDetails(
+            PLMR(
+                address(p),
+                token1Addr,
+                ERC20(token1Addr).name(),
+                token1Rate,
+                token1DecimalShift,
+                token2Addr,
+                ERC20(token2Addr).name(),
+                token2Rate,
+                token2DecimalShift,
+                plmrName[1]
+            )
         );
+    }
+
+    function saveNewPLMRDetails(PLMR memory plmr) internal {
+        allpolymers.push(plmr);
+        emit NewPLMR(plmr);
     }
 
     function onCreateNewPLMR() external pure returns (bytes32) {
         return _ONDEPLOYRETURN;
     }
 
-    function getFlashLoanFee() external view returns (uint256) {
-        return flashFee;
+    function getFeeReceiver() external view returns (address) {
+        return feeReciever;
     }
 
-    function getFlashloanFeeReceiver() external view returns (address) {
-        return feeReciever;
+    function getFeeDivider() external view returns (uint256) {
+        return depositFeeDivider;
+    }
+
+    function getAllPolymers() external view returns (PLMR[] memory) {
+        return allpolymers;
     }
 }
