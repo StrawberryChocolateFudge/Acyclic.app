@@ -6,7 +6,10 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "./PolymerRegistry.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "./clone/CloneFactory.sol";
+import "./clone/FactoryContractVerifier.sol";
+import "./interfaces/IPolymerRegistry.sol";
 
 //  _______  _______  _              _______  _______  _______
 // (  ____ )(  ___  )( \   |\     /|(       )(  ____ \(  ____ )
@@ -18,13 +21,22 @@ import "./PolymerRegistry.sol";
 // |/       (_______)(_______/\_/   |/     \|(_______/|/   \__/
 
 // This is a modified token contract that allows wrapping 2 tokens to combine them and mint a new one, or to redeem the wrapped tokens.
-
-contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
+contract Polymer is
+    Context,
+    IERC20,
+    IERC20Metadata,
+    ReentrancyGuard,
+    Initializable
+{
     bytes32 private constant _ONDEPLOYRETURN =
         keccak256("PolymerRegistry.onCreateNewPLMR");
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+
+    // Using a factory pattern to verify contracts
+    using FactoryContractVerifier for FactoryContractVerifierState;
+    FactoryContractVerifierState private verifier;
 
     address private _token1Addr;
     uint256 private _token1Rate;
@@ -40,18 +52,23 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
     event RedeemPLMR(address to, uint256 amount);
 
     /**
-     * @dev Create a new Polymer token
+     * @dev Create a new Polymer token by initializing a cloned contract
      * @param name_ Sets the name and the symbol. name_[0] is the name of the token, name_[1] is the symbol
      * @param tokenAddr_ Sets the address of the token used for backing this token. tokenAddr[0] is for token1Addr and tokenAddr[1] is for token2Addr
      * @param tokenRate_ Sets the rate of tokens needed to be transferred here to back this token. tokenRate_[0] is for token1Rate and tokenRate_[1] is for token2Rate
      * @param tokenDecimalShift_ is used to calculate amounts when decimals are needed
      */
-    constructor(
+    function initialize(
         string[2] memory name_,
         address[2] memory tokenAddr_,
         uint256[2] memory tokenRate_,
         uint8[2] memory tokenDecimalShift_
-    ) {
+    ) external initializer {
+        // Only a valid registry can initialize this contract
+        require(
+            verifier.checkFactoryBytecode(msg.sender),
+            "Only registry can initialize"
+        );
         // The name and the symbols are the same for PLMR tokens
         _name = name_[0];
         _symbol = name_[1];
@@ -63,7 +80,7 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
         _token2DecimalShift = tokenDecimalShift_[1];
         // Will make sure the deployer is a contract because that's where the flashLoan fees will come from!
         require(
-            PolymerRegistry(msg.sender).onCreateNewPLMR() == _ONDEPLOYRETURN,
+            IPolymerRegistry(msg.sender).onCreateNewPLMR() == _ONDEPLOYRETURN,
             "Only Registry"
         );
         registryAddress = msg.sender;
@@ -100,7 +117,7 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
      * etc...
      */
     function calculateFee(uint256 amount) public view returns (uint256) {
-        uint256 feeDivider = PolymerRegistry(registryAddress).getFeeDivider();
+        uint256 feeDivider = IPolymerRegistry(registryAddress).getFeeDivider();
         return amount.div(feeDivider);
     }
 
@@ -148,7 +165,7 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
     // Transfer the fee to the feeReceiver
     function _forwardFee(address tokenAddress, uint256 feeAmount) internal {
         IERC20(tokenAddress).transfer(
-            PolymerRegistry(registryAddress).getFeeReceiver(),
+            IPolymerRegistry(registryAddress).getFeeReceiver(),
             feeAmount
         );
     }
