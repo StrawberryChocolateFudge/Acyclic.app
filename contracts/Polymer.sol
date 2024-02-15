@@ -6,76 +6,61 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
-import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
 import "./PolymerRegistry.sol";
 
-//  #####   ####  #      #   # #    # ###### #####
-//  #    # #    # #       # #  ##  ## #      #    #
-//  #    # #    # #        #   # ## # #####  #    #
-//  #####  #    # #        #   #    # #      #####
-//  #      #    # #        #   #    # #      #   #
-//  #       ####  ######   #   #    # ###### #    #
+//  _______  _______  _              _______  _______  _______
+// (  ____ )(  ___  )( \   |\     /|(       )(  ____ \(  ____ )
+// | (    )|| (   ) || (   ( \   / )| () () || (    \/| (    )|
+// | (____)|| |   | || |    \ (_) / | || || || (__    | (____)|
+// |  _____)| |   | || |     \   /  | |(_)| ||  __)   |     __)
+// | (      | |   | || |      ) (   | |   | || (      | (\ (
+// | )      | (___) || (____/\| |   | )   ( || (____/\| ) \ \__
+// |/       (_______)(_______/\_/   |/     \|(_______/|/   \__/
+
 // This is a modified token contract that allows wrapping 2 tokens to combine them and mint a new one, or to redeem the wrapped tokens.
-// It supports ERC3156 Flash loans. The ERC20 and ERC3156 code is copied from openzeppelin 4.9!
 
 contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
-    bytes32 private constant _RETURN_VALUE =
-        keccak256("ERC3156FlashBorrower.onFlashLoan");
-
     bytes32 private constant _ONDEPLOYRETURN =
         keccak256("PolymerRegistry.onCreateNewPLMR");
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    mapping(address => uint256) private _balances;
-
-    mapping(address => mapping(address => uint256)) private _allowances;
-
-    uint256 private _totalSupply;
-
-    string private _name;
-    string private _symbol;
-
-    //
     address private _token1Addr;
     uint256 private _token1Rate;
-    uint8 private _token1Decimals;
+    uint8 private _token1DecimalShift;
 
     address private _token2Addr;
     uint256 private _token2Rate;
-    uint8 private _token2Decimals;
+    uint8 private _token2DecimalShift;
 
     address private registryAddress;
 
     event MintPLMR(address to, uint256 amount);
     event RedeemPLMR(address to, uint256 amount);
 
-    bool private flashLoanInProgress = false; // A lock to avoid redeeming when a flash loan is in progress
-
     /**
      * @dev Create a new Polymer token
      * @param name_ Sets the name and the symbol. name_[0] is the name of the token, name_[1] is the symbol
      * @param tokenAddr_ Sets the address of the token used for backing this token. tokenAddr[0] is for token1Addr and tokenAddr[1] is for token2Addr
      * @param tokenRate_ Sets the rate of tokens needed to be transferred here to back this token. tokenRate_[0] is for token1Rate and tokenRate_[1] is for token2Rate
-     * @param tokenDecimals_ is used to calculate amounts when decimals are needed, like a rate of 0.01. tokenDecimals_[0] is for token1Decimals and tokenDecimals_[1] is for token2Decimals
+     * @param tokenDecimalShift_ is used to calculate amounts when decimals are needed
      */
     constructor(
         string[2] memory name_,
         address[2] memory tokenAddr_,
         uint256[2] memory tokenRate_,
-        uint8[2] memory tokenDecimals_
+        uint8[2] memory tokenDecimalShift_
     ) {
-        // the name and the symbos are the same for PLMR tokens
+        // The name and the symbols are the same for PLMR tokens
         _name = name_[0];
         _symbol = name_[1];
         _token1Addr = tokenAddr_[0];
         _token1Rate = tokenRate_[0];
-        _token1Decimals = tokenDecimals_[0];
+        _token1DecimalShift = tokenDecimalShift_[0];
         _token2Addr = tokenAddr_[1];
         _token2Rate = tokenRate_[1];
-        _token2Decimals = tokenDecimals_[1];
+        _token2DecimalShift = tokenDecimalShift_[1];
         // Will make sure the deployer is a contract because that's where the flashLoan fees will come from!
         require(
             PolymerRegistry(msg.sender).onCreateNewPLMR() == _ONDEPLOYRETURN,
@@ -84,58 +69,75 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
         registryAddress = msg.sender;
     }
 
+    /**
+    * @dev : How calculateTokenDeposits works?
+    * The amount represents the amount of PLMR tokens I want to mint or redeem
+    * The amount is in wei always and the rate represents how many tokens I need per wei.
+    * The decimalShift is used to implement decimal numbers. It will be used as a power of 10.
+
+    * Example: I want 1 PLMR token so amount is 1 and wrap 0.001 BTC in it , then I use (amount 1 * rate 1) / 10**3
+    * If I want 1 PLMR token to contain 0.69 BTC, then I use (amount 1 * rate 69) /10 ** 2
+
+    */
     function calculateTokenDeposits(
-        uint256 amount, // The amount of tokens in WEI
-        uint256 rate, // The rate of the token deposit
-        uint8 _decimals // Dividing the token deposit, divider is 18 max,I divide with 10^1 to 10^18, if divider is 0 then I can't divide. Checks are implemented in the registry.
+        uint256 amount, // The amount of PLMR tokens I want to get, in WEI
+        uint256 rate,
+        uint8 _decimalShift // Dividing the token deposit, divider is 18 max,I divide with 10^1 to 10^18, if divider is 0 then I can't divide. Checks are implemented in the registry.
     ) public pure returns (uint256) {
         uint256 depositRate = rate.mul(amount);
-        return depositRate.div(10 ** _decimals);
+        return depositRate.div(10 ** _decimalShift);
     }
 
-    // The deposit fee is the percentage of the flash loan fee, divided by 2
-    // We get the flash loan fee divider from the registry
-    // Calculate the fee with it
-    // Then we halve it to get the deposit fee
-    function calculateFee(uint256 deposit) public view returns (uint256) {
-        uint256 feeDivider = PolymerRegistry(registryAddress).getFlashLoanFee();
-        uint256 tmp = deposit.div(feeDivider);
-        return tmp.div(2);
+    /**
+     * @dev The calculateFee takes the amount, fetches the fee divider from the registry and divides the amount with it.
+     * This function is only used for depositing value. It must be called by the front end to calculate how much to approve before making a deposit.
+     * Example:
+     * For a 1% fee, we divide the amount by 100.
+     * For a 0.5% fee, we divide the amount by 200
+     * For 0.25 we divide by 400
+     * For a 0.2% fee we divide the amount by 500
+     * For a 0.1% fee we divide the amount by 1000
+     * etc...
+     */
+    function calculateFee(uint256 amount) public view returns (uint256) {
+        uint256 feeDivider = PolymerRegistry(registryAddress).getFeeDivider();
+        return amount.div(feeDivider);
     }
 
     // Add a mint function that requires transfer of token1 and token2 to this contract and then mints 1 token for it
     function mintPLMR(uint256 amount) external nonReentrant {
-        // Transfer tokens here from the sender's address (token owner) calculate how much I need
-        address owner = _msgSender();
+        // Transfer tokens here from the sender's address calculate how much I need
+        address sender = _msgSender();
 
         uint256 token1Deposit = calculateTokenDeposits(
             amount,
             _token1Rate,
-            _token1Decimals
+            _token1DecimalShift
         );
         uint256 token2Deposit = calculateTokenDeposits(
             amount,
             _token2Rate,
-            _token2Decimals
+            _token2DecimalShift
         );
 
         uint256 token1Fee = calculateFee(token1Deposit);
         uint256 token2Fee = calculateFee(token2Deposit);
 
         // Transfer the tokens here, we need to transfer the tokens with the fee to address(this) contract
-        _receiveTokens(owner, _token1Addr, token1Deposit.add(token1Fee));
-        _receiveTokens(owner, _token1Addr, token2Deposit.add(token2Fee));
+        _moveTokens(sender, _token1Addr, token1Deposit.add(token1Fee));
+        _moveTokens(sender, _token1Addr, token2Deposit.add(token2Fee));
 
         // Forward the fee from this contract to the feeReciever
         _forwardFee(_token1Addr, token1Fee);
         _forwardFee(_token2Addr, token2Fee);
-        
+
         // Now mint the token amount to the owner
-        _mint(owner, amount);
-        emit MintPLMR(owner, amount);
+        _mint(sender, amount);
+        emit MintPLMR(sender, amount);
     }
 
-    function _receiveTokens(
+    // Transfer tokens on behalf of their owner
+    function _moveTokens(
         address tokenOwner,
         address tokenAddr_,
         uint256 amount
@@ -143,33 +145,41 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
         IERC20(tokenAddr_).safeTransferFrom(tokenOwner, address(this), amount);
     }
 
-    // Transfer the fee to the flashFeeReceiver
+    // Transfer the fee to the feeReceiver
     function _forwardFee(address tokenAddress, uint256 feeAmount) internal {
-        IERC20(tokenAddress).transfer(_flashFeeReceiver(), feeAmount);
+        IERC20(tokenAddress).transfer(
+            PolymerRegistry(registryAddress).getFeeReceiver(),
+            feeAmount
+        );
     }
 
-    // Add a redeem function that requires the user to have tokens and will burn it and transfer the backing back to the sender
+    // Withdraw the tokens after redeeming them
+    function _withdrawTokens(address to, uint256 amount) internal {
+        IERC20(_token1Addr).transfer(to, amount);
+    }
+
+    //  The redeem function that requires the user to have tokens and will burn it and transfer the backing back to the sender
     function redeemPLMR(uint256 amount) external nonReentrant {
-        require(!flashLoanInProgress, "Can't redeem with flash loan");
-        address owner = _msgSender();
-        // Burn the tokens, the burn function checks if the owner actually owns the balance!
-        _burn(owner, amount);
+        address sender = _msgSender();
+        // Burn the tokens, the burn function checks if the sender actually owns the balance!
+        _burn(sender, amount);
 
         uint256 token1Withdraw = calculateTokenDeposits(
             amount,
             _token1Rate,
-            _token1Decimals
+            _token1DecimalShift
         );
 
         uint256 token2Withdraw = calculateTokenDeposits(
             amount,
             _token2Rate,
-            _token2Decimals
+            _token2DecimalShift
         );
-        IERC20(_token1Addr).transfer(owner, token1Withdraw);
-        IERC20(_token2Addr).transfer(owner, token2Withdraw);
-        // Withdraw the tokens to the owner from this contract
-        emit RedeemPLMR(owner, amount);
+        //Withdraw tokens to the woner of the tokens
+        _withdrawTokens(sender, token1Withdraw);
+        _withdrawTokens(sender, token2Withdraw);
+
+        emit RedeemPLMR(sender, amount);
     }
 
     /**
@@ -183,118 +193,32 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
         return (
             _token1Addr,
             _token1Rate,
-            _token1Decimals,
+            _token1DecimalShift,
             _token2Addr,
             _token2Rate,
-            _token2Decimals
+            _token2DecimalShift
         );
     }
 
-    // FLASH LOANS
-
-    //##################################################################################
-    // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/token/ERC20/extensions/ERC20FlashMint.sol
-    /**
-     * @dev Returns the maximum amount of tokens available for loan.
-     * @param token The address of the token that is requested.
-     * @return The amount of token that can be loaned.
-     */
-
-    function maxFlashLoan(address token) public view returns (uint256) {
-        return token == address(this) ? type(uint256).max - totalSupply() : 0;
-    }
-
-    /**
-     * @dev Returns the fee applied when doing flash loans. This function calls
-     * the {_flashFee} function which returns the fee applied when doing flash
-     * loans.
-     * @param token The token to be flash loaned.
-     * @param amount The amount of tokens to be loaned.
-     * @return The fees applied to the corresponding flash loan.
-     */
-    function flashFee(
-        address token,
-        uint256 amount
-    ) public view returns (uint256) {
-        require(token == address(this), "ERC20FlashMint: wrong token");
-        return _flashFee(token, amount);
-    }
-
-    /**
-     * @dev Returns the fee applied when doing flash loans. By default this
-     * implementation has 0 fees. This function can be overloaded to make
-     * the flash loan mechanism deflationary.
-     * @param token The token to be flash loaned.
-     * @param amount The amount of tokens to be loaned.
-     * @return The fees applied to the corresponding flash loan.
-     */
-    function _flashFee(
-        address token,
-        uint256 amount
-    ) internal view returns (uint256) {
-        token;
-        uint256 feeDivider = PolymerRegistry(registryAddress).getFlashLoanFee();
-        return amount.div(feeDivider);
-    }
-
-    /**
-     * @dev Returns the receiver address of the flash fee. By default this
-     * implementation returns the address(0) which means the fee amount will be burnt.
-     * This function can be overloaded to change the fee receiver.
-     * @return The address for which the flash fee will be sent to.
-     */
-    function _flashFeeReceiver() internal view returns (address) {
-        return PolymerRegistry(registryAddress).getFlashloanFeeReceiver();
-    }
-
-    /**
-     * @dev Performs a flash loan. New tokens are minted and sent to the
-     * `receiver`, who is required to implement the {IERC3156FlashBorrower}
-     * interface. By the end of the flash loan, the receiver is expected to own
-     * amount + fee tokens and have them approved back to the token contract itself so
-     * they can be burned.
-     * @param receiver The receiver of the flash loan. Should implement the
-     * {IERC3156FlashBorrower-onFlashLoan} interface.
-     * @param token The token to be flash loaned. Only `address(this)` is
-     * supported.
-     * @param amount The amount of tokens to be loaned.
-     * @param data An arbitrary datafield that is passed to the receiver.
-     * @return `true` if the flash loan was successful.
-     */
-    // This function can reenter, but it doesn't pose a risk because it always preserves the property that the amount
-    // minted at the beginning is always recovered and burned at the end, or else the entire function will revert.
-    // slither-disable-next-line reentrancy-no-eth
-    function flashLoan(
-        IERC3156FlashBorrower receiver,
-        address token,
-        uint256 amount,
-        bytes calldata data
-    ) public returns (bool) {
-        require(
-            amount <= maxFlashLoan(token),
-            "ERC20FlashMint: amount exceeds maxFlashLoan"
-        );
-        flashLoanInProgress = true;
-        uint256 fee = flashFee(token, amount);
-        _mint(address(receiver), amount);
-        require(
-            receiver.onFlashLoan(msg.sender, token, amount, fee, data) ==
-                _RETURN_VALUE,
-            "ERC20FlashMint: invalid return value"
-        );
-        address flashFeeReceiver = _flashFeeReceiver();
-        _spendAllowance(address(receiver), address(this), amount + fee);
-        if (fee == 0 || flashFeeReceiver == address(0)) {
-            _burn(address(receiver), amount + fee);
-        } else {
-            _burn(address(receiver), amount);
-            _transfer(address(receiver), flashFeeReceiver, fee);
-        }
-        flashLoanInProgress = false;
-        return true;
-    }
+    //  _______  _______  _______             _______  _______
+    // (  ____ \(  ____ )(  ____ \           / ___   )(  __   )
+    // | (    \/| (    )|| (    \/           \/   )  || (  )  |
+    // | (__    | (____)|| |         _____       /   )| | /   |
+    // |  __)   |     __)| |        (_____)    _/   / | (/ /) |
+    // | (      | (\ (   | |                  /   _/  |   / | |
+    // | (____/\| ) \ \__| (____/\           (   (__/\|  (__) |
+    // (_______/|/   \__/(_______/           \_______/(_______)
 
     //#########################################################################################
+
+    mapping(address => uint256) private _balances;
+
+    mapping(address => mapping(address => uint256)) private _allowances;
+
+    uint256 private _totalSupply;
+
+    string private _name;
+    string private _symbol;
 
     /**
      * @dev Returns the name of the token.
