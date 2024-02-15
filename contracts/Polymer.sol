@@ -10,8 +10,15 @@ import "@openzeppelin/contracts/interfaces/IERC3156FlashBorrower.sol";
 import "@openzeppelin/contracts/interfaces/IERC3156FlashLender.sol";
 import "./PolymerRegistry.sol";
 
-// This is an extended ERC-20 contract with special mint and burn functions
-// This is an OpenZeppelin ERC-20 contract
+//  #####   ####  #      #   # #    # ###### #####
+//  #    # #    # #       # #  ##  ## #      #    #
+//  #    # #    # #        #   # ## # #####  #    #
+//  #####  #    # #        #   #    # #      #####
+//  #      #    # #        #   #    # #      #   #
+//  #       ####  ######   #   #    # ###### #    #
+// This is a modified token contract that allows wrapping 2 tokens to combine them and mint a new one, or to redeem the wrapped tokens.
+// It supports ERC3156 Flash loans. The ERC20 and ERC3156 code is copied from openzeppelin 4.9!
+
 contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
     bytes32 private constant _RETURN_VALUE =
         keccak256("ERC3156FlashBorrower.onFlashLoan");
@@ -31,6 +38,7 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
     string private _name;
     string private _symbol;
 
+    //
     address private _token1Addr;
     uint256 private _token1Rate;
     uint8 private _token1Decimals;
@@ -41,7 +49,6 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
 
     address private registryAddress;
 
-
     event MintPLMR(address to, uint256 amount);
     event RedeemPLMR(address to, uint256 amount);
 
@@ -50,31 +57,25 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
     /**
      * @dev Create a new Polymer token
      * @param name_ Sets the name and the symbol. name_[0] is the name of the token, name_[1] is the symbol
-     * @param token1Addr_ Sets the address of the token used for backing this token
-     * @param token1Rate_ Sets the rate of tokens needed to be transferred here to back this token from token1
-     * @param token1Decimals_ is used to calculate amounts when decimals are needed, like a rate of 0.01
-     * @param token2Addr_ Sets the address of the token2 used for backing this polymer token
-       @param token2Rate_ Sets the rate of tokens needed from token2 to back this polymer token
-       @param token2Decimals_ is used to calculate rates where decimalsare needed!
+     * @param tokenAddr_ Sets the address of the token used for backing this token. tokenAddr[0] is for token1Addr and tokenAddr[1] is for token2Addr
+     * @param tokenRate_ Sets the rate of tokens needed to be transferred here to back this token. tokenRate_[0] is for token1Rate and tokenRate_[1] is for token2Rate
+     * @param tokenDecimals_ is used to calculate amounts when decimals are needed, like a rate of 0.01. tokenDecimals_[0] is for token1Decimals and tokenDecimals_[1] is for token2Decimals
      */
     constructor(
-        string[] memory name_,
-        address token1Addr_,
-        uint256 token1Rate_,
-        uint8 token1Decimals_,
-        address token2Addr_,
-        uint256 token2Rate_,
-        uint8 token2Decimals_
+        string[2] memory name_,
+        address[2] memory tokenAddr_,
+        uint256[2] memory tokenRate_,
+        uint8[2] memory tokenDecimals_
     ) {
         // the name and the symbos are the same for PLMR tokens
         _name = name_[0];
         _symbol = name_[1];
-        _token1Addr = token1Addr_;
-        _token1Rate = token1Rate_;
-        _token1Decimals = token1Decimals_;
-        _token2Addr = token2Addr_;
-        _token2Rate = token2Rate_;
-        _token2Decimals = token2Decimals_;
+        _token1Addr = tokenAddr_[0];
+        _token1Rate = tokenRate_[0];
+        _token1Decimals = tokenDecimals_[0];
+        _token2Addr = tokenAddr_[1];
+        _token2Rate = tokenRate_[1];
+        _token2Decimals = tokenDecimals_[1];
         // Will make sure the deployer is a contract because that's where the flashLoan fees will come from!
         require(
             PolymerRegistry(msg.sender).onCreateNewPLMR() == _ONDEPLOYRETURN,
@@ -83,51 +84,68 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
         registryAddress = msg.sender;
     }
 
-    //TODO: SHOULD RETURN A TUPPLE WITH A FEE!
     function calculateTokenDeposits(
-        uint256 amount, // The amount of Polymer tokens in WEI
+        uint256 amount, // The amount of tokens in WEI
         uint256 rate, // The rate of the token deposit
-        uint8 _decimals // Dividing the token deposit, divider is 18 max means I divide with 10^1 to 10^18, if divider is 0 then I don't divide
+        uint8 _decimals // Dividing the token deposit, divider is 18 max,I divide with 10^1 to 10^18, if divider is 0 then I can't divide. Checks are implemented in the registry.
     ) public pure returns (uint256) {
         uint256 depositRate = rate.mul(amount);
         return depositRate.div(10 ** _decimals);
     }
 
+    // The deposit fee is the percentage of the flash loan fee, divided by 2
+    // We get the flash loan fee divider from the registry
+    // Calculate the fee with it
+    // Then we halve it to get the deposit fee
+    function calculateFee(uint256 deposit) public view returns (uint256) {
+        uint256 feeDivider = PolymerRegistry(registryAddress).getFlashLoanFee();
+        uint256 tmp = deposit.div(feeDivider);
+        return tmp.div(2);
+    }
+
     // Add a mint function that requires transfer of token1 and token2 to this contract and then mints 1 token for it
     function mintPLMR(uint256 amount) external nonReentrant {
-        // Transfer tokens here from the sender's address, calculate how much I need
+        // Transfer tokens here from the sender's address (token owner) calculate how much I need
         address owner = _msgSender();
 
-        //TODO: Add a 0.02% fee to both of the pair
-
-
-        uint256 token1Deposited = calculateTokenDeposits(
+        uint256 token1Deposit = calculateTokenDeposits(
             amount,
             _token1Rate,
             _token1Decimals
         );
-        uint256 token2Deposited = calculateTokenDeposits(
+        uint256 token2Deposit = calculateTokenDeposits(
             amount,
             _token2Rate,
             _token2Decimals
         );
 
-        // Transfer the tokens here
-        IERC20(_token1Addr).safeTransferFrom(
-            owner,
-            address(this),
-            token1Deposited
-        );
+        uint256 token1Fee = calculateFee(token1Deposit);
+        uint256 token2Fee = calculateFee(token2Deposit);
 
-        IERC20(_token2Addr).safeTransferFrom(
-            owner,
-            address(this),
-            token2Deposited
-        );
+        // Transfer the tokens here, we need to transfer the tokens with the fee to address(this) contract
+        _receiveTokens(owner, _token1Addr, token1Deposit.add(token1Fee));
+        _receiveTokens(owner, _token1Addr, token2Deposit.add(token2Fee));
 
+        // Forward the fee from this contract to the feeReciever
+        _forwardFee(_token1Addr, token1Fee);
+        _forwardFee(_token2Addr, token2Fee);
+        
         // Now mint the token amount to the owner
         _mint(owner, amount);
         emit MintPLMR(owner, amount);
+    }
+
+    function _receiveTokens(
+        address tokenOwner,
+        address tokenAddr_,
+        uint256 amount
+    ) internal {
+        IERC20(tokenAddr_).safeTransferFrom(tokenOwner, address(this), amount);
+    }
+
+    // Transfer the fee to the flashFeeReceiver
+    function _forwardFee(address tokenAddress, uint256 feeAmount) internal {
+        IERC20(tokenAddress).transfer(_flashFeeReceiver(), feeAmount);
     }
 
     // Add a redeem function that requires the user to have tokens and will burn it and transfer the backing back to the sender
@@ -155,7 +173,7 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
     }
 
     /**
-      @dev returns the details of the backing tokens! 1 PLMR must be backed by 2 tokens with x amount
+      @dev returns the details of the backing tokens! 1 PLMR must be backed by 2 tokens always.
      */
     function getBacking()
         public
@@ -171,6 +189,8 @@ contract Polymer is Context, IERC20, IERC20Metadata, ReentrancyGuard {
             _token2Decimals
         );
     }
+
+    // FLASH LOANS
 
     //##################################################################################
     // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.9.0/contracts/token/ERC20/extensions/ERC20FlashMint.sol

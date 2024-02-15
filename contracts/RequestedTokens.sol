@@ -10,12 +10,6 @@ enum TokenStatus {
     REJECTED
 }
 
-enum PriceFeedOrigin{
-    CHAINLINK,
-    URL
-}
-
-
 // A simple solidity contract to request new tokens to be used by the registry!
 // The deployer reviews each request and will reject it or accept it.
 // Once a token is approved to be used by the registry it can't be removed.
@@ -24,8 +18,6 @@ contract RequestedTokens is Ownable {
     mapping(address => string) public logoURL;
     address[] public alltokens;
     address[] public acceptedtokens;
-
-    mapping(address => address) public chainLinkPriceFeed;
 
     event NewTokenRequested(address indexed token);
 
@@ -56,10 +48,16 @@ contract RequestedTokens is Ownable {
         acceptedtokens.push(_token);
         emit NewTokenAccepted(_token);
     }
-    
-    // The owner can add a chainlink price feed address to a token. This allows for dynamically updating the front end price displays!
-    // Only ChainLink price feeds are supported, price feeds are for the user interface display only!
-    function addPriceFeedSource(address _token, address priceFeed) external onlyOwner{
-        chainLinkPriceFeed[_token] = priceFeed;
+
+
+   // Later the ownership could be transferred to a DAO to create a voting rpocess for accepting/rejecting tokens
+    function transferOwnership(
+        address newOwner
+    ) public virtual override onlyOwner {
+        require(
+            newOwner != address(0),
+            "Ownable: new owner is the zero address"
+        );
+        _transferOwnership(newOwner);
     }
 }
