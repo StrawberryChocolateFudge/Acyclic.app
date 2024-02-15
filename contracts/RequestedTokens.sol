@@ -10,14 +10,23 @@ enum TokenStatus {
     REJECTED
 }
 
+//  _______  _______  _______           _______  _______ _________  _________ _______  _        _______  _        _______ 
+// (  ____ )(  ____ \(  ___  )|\     /|(  ____ \(  ____ \\__   __/  \__   __/(  ___  )| \    /\(  ____ \( (    /|(  ____ \
+// | (    )|| (    \/| (   ) || )   ( || (    \/| (    \/   ) (        ) (   | (   ) ||  \  / /| (    \/|  \  ( || (    \/
+// | (____)|| (__    | |   | || |   | || (__    | (_____    | |        | |   | |   | ||  (_/ / | (__    |   \ | || (_____ 
+// |     __)|  __)   | |   | || |   | ||  __)   (_____  )   | |        | |   | |   | ||   _ (  |  __)   | (\ \) |(_____  )
+// | (\ (   | (      | | /\| || |   | || (            ) |   | |        | |   | |   | ||  ( \ \ | (      | | \   |      ) |
+// | ) \ \__| (____/\| (_\ \ || (___) || (____/\/\____) |   | |        | |   | (___) ||  /  \ \| (____/\| )  \  |/\____) |
+// |/   \__/(_______/(____\/_)(_______)(_______/\_______)   )_(        )_(   (_______)|_/    \/(_______/|/    )_)\_______)
+                                                                                                                       
+
 // A simple solidity contract to request new tokens to be used by the registry!
 // The deployer reviews each request and will reject it or accept it.
 // Once a token is approved to be used by the registry it can't be removed.
 contract RequestedTokens is Ownable {
     mapping(address => TokenStatus) public status;
-    mapping(address => string) public logoURL;
-    address[] public alltokens;
-    address[] public acceptedtokens;
+    address[] private alltokens;
+    address[] private acceptedtokens;
 
     event NewTokenRequested(address indexed token);
 
@@ -25,13 +34,9 @@ contract RequestedTokens is Ownable {
 
     event NewTokenAccepted(address indexed token);
 
-    function requestNewToken(
-        address _token,
-        string calldata _logoURL
-    ) external {
+    function requestNewToken(address _token) external {
         require(status[_token] == TokenStatus.EMPTY, "Request already exists!");
         status[_token] = TokenStatus.PENDING;
-        logoURL[_token] = _logoURL;
         alltokens.push(_token);
         emit NewTokenRequested(_token);
     }
@@ -49,8 +54,7 @@ contract RequestedTokens is Ownable {
         emit NewTokenAccepted(_token);
     }
 
-
-   // Later the ownership could be transferred to a DAO to create a voting rpocess for accepting/rejecting tokens
+    // Later the ownership could be transferred to a DAO to create a voting rpocess for accepting/rejecting tokens
     function transferOwnership(
         address newOwner
     ) public virtual override onlyOwner {
@@ -59,5 +63,12 @@ contract RequestedTokens is Ownable {
             "Ownable: new owner is the zero address"
         );
         _transferOwnership(newOwner);
+    }
+
+    function getAllTokens() external view returns (address[] memory) {
+        return alltokens;
+    }
+    function getAcceptedTokens() external view returns (address[] memory){
+        return acceptedtokens;
     }
 }
