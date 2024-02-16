@@ -106,8 +106,10 @@ contract Polymer is
     }
 
     /**
-     * @dev The calculateFee takes the amount, fetches the fee divider from the registry and divides the amount with it.
-     * This function is only used for depositing value. It must be called by the front end to calculate how much to approve before making a deposit.
+     * @dev
+     * Only external ERC-20 tokens have fees. Registered PLMR tokens don't!
+     * The calculateFee takes the amount, fetches the fee divider from the registry and divides the amount with it.
+     * This function is only used for depositing value. It also must be called by the front end to calculate how much to approve before making a deposit.
      * Example:
      * For a 1% fee, we divide the amount by 100.
      * For a 0.5% fee, we divide the amount by 200
@@ -116,9 +118,19 @@ contract Polymer is
      * For a 0.1% fee we divide the amount by 1000
      * etc...
      */
-    function calculateFee(uint256 amount) public view returns (uint256) {
-        uint256 feeDivider = IPolymerRegistry(registryAddress).getFeeDivider();
-        return amount.div(feeDivider);
+    function calculateFee(
+        uint256 amount,
+        address _token
+    ) public view returns (uint256) {
+        // If the deposited token is a registered address then there are no fees
+        if (IPolymerRegistry(registryAddress).isPolymerAddress(_token)) {
+            return 0;
+        } else {
+            // Else we divide the amount with the feeDivider to calculate the fee
+            uint256 feeDivider = IPolymerRegistry(registryAddress)
+                .getFeeDivider();
+            return amount.div(feeDivider);
+        }
     }
 
     // Add a mint function that requires transfer of token1 and token2 to this contract and then mints 1 token for it
@@ -137,8 +149,8 @@ contract Polymer is
             _token2DecimalShift
         );
 
-        uint256 token1Fee = calculateFee(token1Deposit);
-        uint256 token2Fee = calculateFee(token2Deposit);
+        uint256 token1Fee = calculateFee(token1Deposit, _token1Addr);
+        uint256 token2Fee = calculateFee(token2Deposit, _token2Addr);
 
         // Transfer the tokens here, we need to transfer the tokens with the fee to address(this) contract
         _moveTokens(sender, _token1Addr, token1Deposit.add(token1Fee));
