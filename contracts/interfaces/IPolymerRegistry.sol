@@ -1,6 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.12;
 
+// The interface of the PolymerRegistry used by the Polymer contract. Interfaces are used when calling an external contract to reduce contract sizes
 interface IPolymerRegistry {
     function getFeeDivider() external view returns (uint256);
 
