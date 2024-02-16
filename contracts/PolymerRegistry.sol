@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IInitializablePolymer.sol";
-import "./RequestedTokens.sol";
+import "./interfaces/IRequestedTokens.sol";
 import "./clone/CloneFactory.sol";
 
 //  _______  _______  _______ _________ _______ _________ _______
@@ -33,13 +33,14 @@ contract PolymerRegistry is Ownable, CloneFactory {
     error InvalidDecimals();
     error OnlyAcceptedToken();
     error InvalidRate();
+    error OnlyOwner();
 
     string private prefix = "PLMR"; // The prefix of the deployed token contracts
     address private feeReciever; // The address of the flash loan reciever
     uint256 private depositFeeDivider; // The fee for the deposit
     uint256 public lastIndex; // The index of the last PLMR contract deployed!
 
-    RequestedTokens private requestedTokens;
+    IRequestedTokens private requestedTokens;
 
     mapping(address => bool) public isPolymerAddress; // A helper mapping to check if an address is registered here
 
@@ -60,18 +61,28 @@ contract PolymerRegistry is Ownable, CloneFactory {
 
     PLMR[] private allpolymers; // All the plmrs are stored in an array
 
+    // Emit a NewPLMR event. The front end will listen to this event to navigate to the next page.
     event NewPLMR(PLMR);
+
+    /**
+   @dev The costructor is invoked when deploying the contract
+   @param depositFeeDivider_ is the variable used to divide an amount when calculating the fees for deposits
+   @param requestedTokens_ is the address of the RequestedTokens contract deployed so only approved tokens can be used by  createNewPLMR
+   @param polymerLib_ is the address of the Polymer token contract which is cloned
+    */
 
     constructor(
         uint256 depositFeeDivider_,
         address requestedTokens_,
         address polymerLib_
     ) {
+        // This is the starting index of the counter that counts deployed contracts.
         lastIndex = 0;
+        // The address that recieves the fees is the deployer. It can be later updated by the owner (same address)
         feeReciever = msg.sender;
         depositFeeDivider = depositFeeDivider_; // it's 500 for a 0.2% fee we divide, amount/fee
-        // The
-        requestedTokens = RequestedTokens(requestedTokens_);
+
+        requestedTokens = IRequestedTokens(requestedTokens_);
         polymerLib = polymerLib_;
     }
 
@@ -86,6 +97,7 @@ contract PolymerRegistry is Ownable, CloneFactory {
     }
 
     // Transfer the ownership to another address. Later the contract could be transferred to a Dao to collect and vote on fees
+    // This function is copied from openzeppelin and was not modified
     function transferOwnership(
         address newOwner
     ) public virtual override onlyOwner {
@@ -98,7 +110,7 @@ contract PolymerRegistry is Ownable, CloneFactory {
 
     /**
      @dev Create a new Polymer token pair from accepted requested tokens.
-          The tokens must be either an already registered contract or a deployed PLMR contract!
+    The tokens must be either an already registered contract or a deployed PLMR contract!
     @param token1Addr the address of the  token1 
     @param token1Rate the rate of the token1
     @param token1DecimalShift the amount we shift the decimals of the token1 when for calculating the rate
@@ -126,13 +138,13 @@ contract PolymerRegistry is Ownable, CloneFactory {
         // If the address is not a PLMR address
         if (!isPolymerAddress[token1Addr]) {
             // Only allow creating token pairs that were reviewed
-            if (requestedTokens.status(token1Addr) != TokenStatus.ACCEPTED)
+            if (requestedTokens.getStatus(token1Addr) != TokenStatus.ACCEPTED)
                 revert OnlyAcceptedToken();
         }
         // If the address 2 is not a PLMR address
         if (!isPolymerAddress[token2Addr]) {
             // Only allow creating token pairs that were reviewed
-            if (requestedTokens.status(token2Addr) != TokenStatus.ACCEPTED)
+            if (requestedTokens.getStatus(token2Addr) != TokenStatus.ACCEPTED)
                 revert OnlyAcceptedToken();
         }
         //Increment the index for the name of the token
@@ -153,7 +165,7 @@ contract PolymerRegistry is Ownable, CloneFactory {
         // Ticker should be like PLMR4, prefix+index
         plmrName[1] = string.concat(prefix, index);
 
-        // Create a new Polymer contract by cloning it
+        // Create a new Polymer contract by cloning the library
 
         address initializedPolymer = cloneAndInitialize(
             plmrName,
@@ -180,6 +192,7 @@ contract PolymerRegistry is Ownable, CloneFactory {
         );
     }
 
+    // Call clone and initualize the new Polymer contract
     function cloneAndInitialize(
         string[2] memory name_,
         address[2] memory tokenAddr_,
@@ -191,28 +204,37 @@ contract PolymerRegistry is Ownable, CloneFactory {
         return address(p);
     }
 
+    // Save the new deployed contracts data in storage and emit an event for the front end to pick up
     function saveNewPLMRDetails(PLMR memory plmr) internal {
         isPolymerAddress[plmr.polymerAddress] = true;
         allpolymers.push(plmr);
         emit NewPLMR(plmr);
     }
 
+    // A function called by the deployed contract to check the registry.
+    // This function is here to make sure only a registry with this interface can call the Polymer contract
+    // It is replaced by the FactoryBytecode checking which makes more sense,
+    // but I kept it to allow external checks that this contract supports deploying new PLMR contracts
     function onCreateNewPLMR() external pure returns (bytes32) {
         return _ONDEPLOYRETURN;
     }
 
+    // Returns the address that recieves the deposit fees
     function getFeeReceiver() external view returns (address) {
         return feeReciever;
     }
 
+    // Returns the value used for calculating the fee
     function getFeeDivider() external view returns (uint256) {
         return depositFeeDivider;
     }
 
+    // Returns all the deployed contracts
     function getAllPolymers() external view returns (PLMR[] memory) {
         return allpolymers;
     }
 
+    // Returns a deployed contract by index from the array
     function getPolymerByIndex(
         uint256 index
     ) external view returns (PLMR memory) {
