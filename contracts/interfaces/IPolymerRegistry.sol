@@ -8,4 +8,7 @@ interface IPolymerRegistry {
     function getFeeReceiver() external view returns (address);
 
     function onCreateNewPLMR() external pure returns (bytes32);
+
+    function isPolymerAddress(address _address) external view returns (bool);
+
 }
