@@ -3,7 +3,8 @@ import { parseEther } from "ethers/lib/utils";
 
 export async function setUpPLRM(): Promise<any> {
   const [owner, alice, bob] = await ethers.getSigners();
-  // Deploy example ERC20 contracts
+
+  // Deploy a couple of ERC20 tokens with different names and symbols for testing!
   const BTCFactory = await ethers.getContractFactory("TestERC20");
   const BTCDeploy = await BTCFactory.deploy("BTC", "BTC", parseEther("100"));
   const BTC = await BTCDeploy.deployed();
@@ -36,15 +37,36 @@ export async function setUpPLRM(): Promise<any> {
   const requestedTokens = await RequestedTokensFactory.deploy();
   await requestedTokens.deployed();
 
-  // Deploy a couple of ERC20 tokens with different names and symbols for testing!
+  const FactoryContractVerifier = await ethers.getContractFactory(
+    "FactoryContractVerifier",
+  );
+  const factoryContractVerifier = await FactoryContractVerifier.deploy();
+  const factorycontractverifier = await factoryContractVerifier.deployed();
 
+  const plrmTokenLibFactory = await ethers.getContractFactory("Polymer", {
+    libraries: { FactoryContractVerifier: factorycontractverifier.address },
+  });
+  const plmrTokenLibDepl = await plrmTokenLibFactory.deploy();
+  const plmrTokenLib = await plmrTokenLibDepl.deployed();
   // Then deploy the PolymerRegistry!
   const registryFactory = await ethers.getContractFactory("PolymerRegistry");
   const registryDeploy = await registryFactory.deploy(
     500,
     requestedTokens.address,
-  ); // 500 for a 0.5 percent flash loan fee and 0.25 % deposit fee on both tokens
-  const registry = await registryDeploy.deployed();
+    plmrTokenLib.address,
+  ); // 500 for a 0.5 percent deposit fee on both tokens
 
-  return { owner, BTC, USD, EUR, ETH, alice, bob, registry, requestedTokens };
+  const registry = await registryDeploy.deployed();
+  return {
+    owner,
+    BTC,
+    USD,
+    EUR,
+    ETH,
+    alice,
+    bob,
+    registry,
+    requestedTokens,
+    polymerFactory: plrmTokenLibFactory,
+  };
 }
