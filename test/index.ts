@@ -8,12 +8,12 @@ describe("Polymer registry", function () {
     const { owner, BTC, USD, EUR, ETH, alice, bob, registry, requestedTokens } =
       await setUpPLRM();
 
-    expect(await requestedTokens.status(BTC.address)).to.equal(0);
+    expect(await requestedTokens.getStatus(BTC.address)).to.equal(0);
     // Request a new token
     await requestedTokens.connect(bob).requestNewToken(
       BTC.address,
     );
-    expect(await requestedTokens.status(BTC.address)).to.equal(1);
+    expect(await requestedTokens.getStatus(BTC.address)).to.equal(1);
 
     // Now request another token
     await requestedTokens.connect(bob).requestNewToken(USD.address);
@@ -52,11 +52,11 @@ describe("Polymer registry", function () {
     // I accept tokens with owner
 
     await requestedTokens.acceptTokenRequest(BTC.address);
-    expect(await requestedTokens.status(BTC.address)).to.equal(2);
+    expect(await requestedTokens.getStatus(BTC.address)).to.equal(2);
 
     // I reject tokens with owner
     await requestedTokens.rejectTokenRequest(USD.address);
-    expect(await requestedTokens.status(USD.address)).to.equal(3);
+    expect(await requestedTokens.getStatus(USD.address)).to.equal(3);
 
     // I test trying to register a pair with a rejected token
     let token1Addr = BTC.address;
@@ -145,7 +145,125 @@ describe("Polymer registry", function () {
     expect(await registry.lastIndex()).to.equal(1);
   });
 
-  // it("Should deploy, mint and redeem", async function () {
+  it("Testing deployed plmr data fetching", async function () {
+    // Setup a plmr contract to be able to start calculating deposits and fees
+    const {
+      owner,
+      BTC,
+      USD,
+      EUR,
+      ETH,
+      alice,
+      bob,
+      registry,
+      requestedTokens,
+      polymerFactory,
+    } = await setUpPLRM();
+
+    await requestedTokens.connect(bob).requestNewToken(
+      BTC.address,
+    );
+    await requestedTokens.connect(bob).requestNewToken(USD.address);
+
+    await requestedTokens.acceptTokenRequest(BTC.address);
+    await requestedTokens.acceptTokenRequest(USD.address);
+
+    let token1Addr = BTC.address;
+    let token1Rate = 1;
+    let token1DecimalShift = 3;
+    let token2Addr = USD.address;
+    let token2Rate = 1000;
+    let token2DecimalShift = 0;
+
+    await registry.connect(bob).createNewPLMR(
+      token1Addr,
+      token1Rate,
+      token1DecimalShift,
+      token2Addr,
+      token2Rate,
+      token2DecimalShift,
+    );
+
+    // Expect that the new PLMR exists!
+    let plmrs = await registry.getAllPolymers();
+    expect(plmrs.length).to.equal(1);
+    const plmr1 = plmrs[0];
+    expect(plmr1.plmrSymbol).to.equal("PLMR1");
+    expect(plmr1.plmrName).to.equal("PLMR1-BTC/USD");
+    expect(plmr1.token1Addr).to.equal(BTC.address);
+    expect(plmr1.token1Ticker).to.equal("BTC");
+    expect(plmr1.token1Rate).to.equal(1);
+    expect(plmr1.token1DecimalShift).to.equal(3);
+
+    expect(plmr1.token2Addr).to.equal(USD.address);
+    expect(plmr1.token2Ticker).to.equal("USD");
+    expect(plmr1.token2Rate).to.equal(1000);
+    expect(plmr1.token2DecimalShift).to.equal(0);
+
+    expect(await registry.isPolymerAddress(plmr1.polymerAddress)).to.equal(
+      true,
+    );
+
+    // create a new PLMR contract to test isPolymerAddress checks when creating them
+
+    token1Addr = BTC.address;
+    token1Rate = 1;
+    token1DecimalShift = 3;
+    token2Addr = plmr1.polymerAddress;
+    token2Rate = 1;
+    token2DecimalShift = 0;
+
+    // The PLMR2 token contains 0.001 BTC and 1 PLMR1 (which contains 0.001BTC and 1000USD)
+
+    await registry.connect(bob).createNewPLMR(
+      token1Addr,
+      token1Rate,
+      token1DecimalShift,
+      token2Addr,
+      token2Rate,
+      token2DecimalShift,
+    );
+    //this succeeds because PLMR1 don't need to be registered
+    plmrs = await registry.getAllPolymers();
+    expect(plmrs.length).to.equal(2);
+    const plmr2 = plmrs[1];
+    expect(plmr2.plmrSymbol).to.equal("PLMR2");
+    expect(plmr2.plmrName).to.equal("PLMR2-BTC/PLMR1");
+    expect(plmr2.token1Addr).to.equal(BTC.address);
+    expect(plmr2.token1Ticker).to.equal("BTC");
+    expect(plmr2.token1Rate).to.equal(1);
+    expect(plmr2.token1DecimalShift).to.equal(3);
+
+    expect(plmr2.token2Addr).to.equal(plmr1.polymerAddress);
+    expect(plmr2.token2Ticker).to.equal("PLMR1-BTC/USD");
+    expect(plmr2.token2Rate).to.equal(1);
+    expect(plmr2.token2DecimalShift).to.equal(0);
+
+    expect(await registry.isPolymerAddress(plmr2.polymerAddress)).to.equal(
+      true,
+    );
+    // Attach to the contract and test if the data is saved proper
+    const plmr2Contract = await polymerFactory.attach(plmr2.polymerAddress);
+
+    const backing = await plmr2Contract.getBacking();
+    expect(await plmr2Contract.name()).to.equal("PLMR2-BTC/PLMR1");
+    expect(await plmr2Contract.symbol()).to.equal("PLMR2");
+    expect(await plmr2Contract.totalSupply()).to.equal(0);
+    expect(backing[0]).to.equal(plmr2.token1Addr);
+    expect(backing[1]).to.equal(plmr2.token1Rate);
+    expect(backing[2]).to.equal(plmr2.token1DecimalShift);
+    expect(backing[3]).to.equal(plmr2.token2Addr);
+    expect(backing[4]).to.equal(plmr2.token2Rate);
+    expect(backing[5]).to.equal(plmr2.token2DecimalShift);
+
+    // expect(backing[5])
+  });
+
+  it("Test plmr fee calculations", async function () {
+    // Test plmr1 calculateTokenDeposits and calculate Fee
+  });
+
+  // it("Test mint and redeem", async function () {
   //   const { owner, BTC, USD, EUR, ETH, alice, bob, registry } =
   //     await setUpPLRM();
 
