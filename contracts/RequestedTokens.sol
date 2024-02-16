@@ -2,29 +2,26 @@
 pragma solidity ^0.8.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./interfaces/IRequestedTokens.sol";
 
-enum TokenStatus {
-    EMPTY,
-    PENDING,
-    ACCEPTED,
-    REJECTED
-}
-
-//  _______  _______  _______           _______  _______ _________  _________ _______  _        _______  _        _______ 
+//  _______  _______  _______           _______  _______ _________  _________ _______  _        _______  _        _______
 // (  ____ )(  ____ \(  ___  )|\     /|(  ____ \(  ____ \\__   __/  \__   __/(  ___  )| \    /\(  ____ \( (    /|(  ____ \
 // | (    )|| (    \/| (   ) || )   ( || (    \/| (    \/   ) (        ) (   | (   ) ||  \  / /| (    \/|  \  ( || (    \/
-// | (____)|| (__    | |   | || |   | || (__    | (_____    | |        | |   | |   | ||  (_/ / | (__    |   \ | || (_____ 
+// | (____)|| (__    | |   | || |   | || (__    | (_____    | |        | |   | |   | ||  (_/ / | (__    |   \ | || (_____
 // |     __)|  __)   | |   | || |   | ||  __)   (_____  )   | |        | |   | |   | ||   _ (  |  __)   | (\ \) |(_____  )
 // | (\ (   | (      | | /\| || |   | || (            ) |   | |        | |   | |   | ||  ( \ \ | (      | | \   |      ) |
 // | ) \ \__| (____/\| (_\ \ || (___) || (____/\/\____) |   | |        | |   | (___) ||  /  \ \| (____/\| )  \  |/\____) |
 // |/   \__/(_______/(____\/_)(_______)(_______/\_______)   )_(        )_(   (_______)|_/    \/(_______/|/    )_)\_______)
-                                                                                                                       
 
 // A simple solidity contract to request new tokens to be used by the registry!
 // The deployer reviews each request and will reject it or accept it.
 // Once a token is approved to be used by the registry it can't be removed.
-contract RequestedTokens is Ownable {
-    mapping(address => TokenStatus) public status;
+// The purpose of this contract is to restrict what tokens can be used, to avoid anything with a malicious transfer or transferFrom function to make it into a derivative somewhere.
+// This  contract supports DAO integration in the future by implementing a DAO contract to call these functions and transferring ownership to it.
+// With DAOification the decision process of what token should be allowed to be polymerized would be decentralized.
+
+contract RequestedTokens is Ownable,IRequestedTokens {
+    mapping(address => TokenStatus) private status;
     address[] private alltokens;
     address[] private acceptedtokens;
 
@@ -65,10 +62,15 @@ contract RequestedTokens is Ownable {
         _transferOwnership(newOwner);
     }
 
+    function getStatus(address statusOf) external view returns (TokenStatus) {
+        return status[statusOf];
+    }
+
     function getAllTokens() external view returns (address[] memory) {
         return alltokens;
     }
-    function getAcceptedTokens() external view returns (address[] memory){
+
+    function getAcceptedTokens() external view returns (address[] memory) {
         return acceptedtokens;
     }
 }
