@@ -227,7 +227,7 @@ contract Polymer is
     // (_______/|/   \__/(_______/           \_______/(_______)
 
     //#########################################################################################
-
+    // THE ERC-20 implementation is exactly as specified in Openzeppelin 4.9
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
