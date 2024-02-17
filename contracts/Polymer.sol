@@ -183,8 +183,8 @@ contract Polymer is
     }
 
     // Withdraw the tokens after redeeming them
-    function _withdrawTokens(address to, uint256 amount) internal {
-        IERC20(_token1Addr).transfer(to, amount);
+    function _withdrawTokens(address _token,address to, uint256 amount) internal {
+        IERC20(_token).transfer(to, amount);
     }
 
     //  The redeem function that requires the user to have tokens and will burn it and transfer the backing back to the sender
@@ -205,8 +205,8 @@ contract Polymer is
             _token2DecimalShift
         );
         //Withdraw tokens to the woner of the tokens
-        _withdrawTokens(sender, token1Withdraw);
-        _withdrawTokens(sender, token2Withdraw);
+        _withdrawTokens(_token1Addr,sender, token1Withdraw);
+        _withdrawTokens(_token2Addr,sender, token2Withdraw);
 
         emit RedeemPLMR(sender, amount);
     }
