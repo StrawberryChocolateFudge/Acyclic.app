@@ -68,7 +68,7 @@ contract PolymerRegistry is Ownable, CloneFactory {
     event NewPLMR(PLMR);
 
     // A mapping to store how many times a token pair was deployed as a PLMR token.
-    // This is used for the SPAM protection, creating more PLMR token contracts with a pair that is already wrapped will get progressively more expensive! This is used to disincentivise spam attacks.
+    // This is used for spam protection, createNewPLMR can be called by anyone, but creating more PLMR token contracts with the same pair that is already wrapped will get progressively more expensive!
     mapping(bytes32 => uint256) private deploymentCounter;
     // The base fee for a new PLMR contract deployment is 0.05 ether. The base fee is multiplied with the deploymentCounter. The first deployment is always free.
     uint256 private constant PLMRDeploymentBaseFee = 0.05 ether;
@@ -217,6 +217,8 @@ contract PolymerRegistry is Ownable, CloneFactory {
         address token2Addr
     ) internal {
         deploymentCounter[tokenAddressHasher(token1Addr, token2Addr)] += 1;
+        // Increment the counter for both alignment so the can't be bypassed by changing the order of tokens in the pair
+        deploymentCounter[tokenAddressHasher(token2Addr, token1Addr)] += 1;
     }
 
     //Concat the Token name
