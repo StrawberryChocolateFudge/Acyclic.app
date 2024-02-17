@@ -12,6 +12,7 @@ import {
   getPLMRArrayIndex,
   getPLMRIndex,
   Option,
+  PLMR,
   RegisterNewPLMRArgs,
   Result,
 } from "../lib/traverseDAG";
@@ -603,170 +604,169 @@ describe("Polymer registry", function () {
     //ETC... I did not check all DAG parameters, they look good!
   });
 
-  // /?TODO:TEST MINT AND REDEEM AND THEN THE CONTRACT TESTS ARE DONE!
-  // it("Test mint and redeem", async function () {
-  //   const { owner, BTC, USD, EUR, ETH, alice, bob, registry } =
-  //     await setUpPLRM();
+  it("Test mint and redeem", async function () {
+    //SETUP START
+    const {
+      owner,
+      BTC,
+      USD,
+      EUR,
+      ETH,
+      alice,
+      bob,
+      registry,
+      requestedTokens,
+      polymerFactory,
+    } = await setUpPLRM();
 
-  //   //TODO: Use the registry to register the tokens before they can be used in createNewPLMR
+    //Setting up available tokens
+    await requestedTokens.connect(bob).requestNewToken(
+      BTC.address,
+    );
+    await requestedTokens.connect(bob).requestNewToken(USD.address);
+    await requestedTokens.connect(bob).requestNewToken(EUR.address);
+    await requestedTokens.connect(bob).requestNewToken(ETH.address);
 
-  //   expect(await registry.lastIndex()).to.equal(0);
+    await requestedTokens.acceptTokenRequest(BTC.address);
+    await requestedTokens.acceptTokenRequest(USD.address);
+    await requestedTokens.acceptTokenRequest(EUR.address);
+    await requestedTokens.acceptTokenRequest(ETH.address);
+    // Requested tokens setup done
 
-  //   // I want to deposit 0.001 BTC and 1000 USD!
+    const plmr1Params: RegisterNewPLMRArgs = {
+      ...buildToken1_RegisterPlmrParams(BTC.address, 1, 3), //0.001 BTC
+      ...buildToken2_RegisterPlmrParams(USD.address, 1000, 0), // 1000 USD
+    };
 
-  //   const token1Addr = BTC.address;
-  //   const token1Rate = 1;
-  //   const token1Decimals = 3; // I want 3 decimals
-  //   const token2Addr = USD.address;
-  //   const token2Rate = 1000;
-  //   const token2Decimals = 0;
+    let deploymentFee = await registry.getDeploymentFee(
+      plmr1Params.token1Addr,
+      plmr1Params.token2Addr,
+    );
 
-  //   //use the registry to create a PLRM
-  //   const tx = await registry.createNewPLMR(
-  //     token1Addr,
-  //     token1Rate,
-  //     token1Decimals,
-  //     token2Addr,
-  //     token2Rate,
-  //     token2Decimals,
-  //   );
+    // Now I register these now
+    await registry.connect(bob).createNewPLMR(
+      plmr1Params.token1Addr,
+      plmr1Params.token1Rate,
+      plmr1Params.token1DecimalShift,
+      plmr1Params.token2Addr,
+      plmr1Params.token2Rate,
+      plmr1Params.token2DecimalShift,
+      { value: deploymentFee },
+    );
 
-  //   await tx.wait().then((receipt: any) => {
-  //     const events = receipt.events;
-  //     const event = events[0];
-  //     expect(event.event).to.equal("NewPLMR");
-  //   });
+    // Now I combine some PLMR tokens!
+    let plmr1: PLMR = await registry.getPolymerByIndex(0);
 
-  //   let index = await registry.lastIndex();
-  //   let registeredDetails = await registry.polymers(index);
-  //   let details = await registeredDetails;
-  //   expect(details.token1Addr).to.equal(token1Addr);
-  //   expect(details.token1Rate).to.equal(token1Rate);
-  //   expect(details.token1Decimals).to.equal(token1Decimals);
-  //   expect(details.token2Addr).to.equal(token2Addr);
-  //   expect(details.token2Rate).to.equal(token2Rate);
-  //   expect(details.token2Decimals).to.equal(token2Decimals);
-  //   expect(details.ticker).to.equal("PLMR1");
-  //   expect(details.token1Symbol).to.equal("BTC");
-  //   expect(details.token2Symbol).to.equal("USD");
+    // SETUP ENDS
 
-  //   const PLMR1_Address = await registeredDetails.polymerAddress;
+    const PLMR1_contract = await polymerFactory.attach(plmr1.polymerAddress);
 
-  //   // // Gonna attach to this address
-  //   const polymerFactory = await ethers.getContractFactory("Polymer");
-  //   const PLMR1 = await polymerFactory.attach(PLMR1_Address);
+    expect(await PLMR1_contract.symbol()).to.equal("PLMR1");
 
-  //   expect(await PLMR1.name()).to.equal("PLMR1");
+    let PLMR1_mintAmount = parseEther("1");
 
-  //   const backing = await PLMR1.getBacking();
-  //   expect(backing[0]).to.equal(details.token1Addr);
-  //   expect(backing[1]).to.equal(details.token1Rate);
-  //   expect(backing[2]).to.equal(details.token1Decimals);
-  //   expect(backing[3]).to.equal(details.token2Addr);
-  //   expect(backing[4]).to.equal(details.token2Rate);
-  //   expect(backing[5]).to.equal(details.token2Decimals);
+    const PLMR1_token1ToDeposit = await PLMR1_contract.calculateTokenDeposits(
+      PLMR1_mintAmount,
+      plmr1.token1Rate,
+      plmr1.token1DecimalShift,
+    );
+    const PLMR1_token2ToDeposit = await PLMR1_contract.calculateTokenDeposits(
+      PLMR1_mintAmount,
+      plmr1.token2Rate,
+      plmr1.token2DecimalShift,
+    );
 
-  //   //TODO: ADD TOKEN FEE CALCULATIONS TOO!
-  //   const token1ToDeposit = await PLMR1.calculateTokenDeposits(
-  //     parseEther("1"),
-  //     token1Rate,
-  //     token1Decimals,
-  //   );
-  //   expect(formatEther(token1ToDeposit)).to.equal("0.001");
+    const PLMR1_token1DepositFee = await PLMR1_contract.calculateFee(
+      PLMR1_token1ToDeposit,
+      plmr1.token1Addr,
+    );
+    const PLMR1_token2DepositFee = await PLMR1_contract.calculateFee(
+      PLMR1_token2ToDeposit,
+      plmr1.token2Addr,
+    );
 
-  //   const token2ToDeposit = await PLMR1.calculateTokenDeposits(
-  //     parseEther("1"),
-  //     token2Rate,
-  //     token2Decimals,
-  //   );
-  //   expect(formatEther(token2ToDeposit)).to.equal("1000.0");
+    expect(BTC.address).to.equal(plmr1.token1Addr);
+    expect(USD.address).to.equal(plmr1.token2Addr);
 
-  //   // // Now I check the totalSupply of this PLMR token and mint some
-  //   expect(await PLMR1.totalSupply()).to.equal(0);
+    await BTC.transfer(
+      alice.address,
+      PLMR1_token1ToDeposit.add(PLMR1_token1DepositFee),
+    );
 
-  //   let errorOccured = false;
-  //   let errorMessage = "";
+    await USD.transfer(
+      alice.address,
+      PLMR1_token2ToDeposit.add(PLMR1_token2DepositFee),
+    );
 
-  //   try {
-  //     await PLMR1.mintPLMR(parseEther("1"));
-  //   } catch (err: any) {
-  //     errorOccured = true;
-  //     errorMessage = err.message;
-  //   }
-  //   expect(errorOccured).to.be.true;
-  //   expect(errorMessage.includes("ERC20: insufficient allowance"));
+    expect(await BTC.balanceOf(alice.address)).to.equal(
+      PLMR1_token1ToDeposit.add(PLMR1_token1DepositFee),
+    );
 
-  //   // // now I approve spend from the owner's balance
-  //   await BTC.approve(PLMR1.address, token1ToDeposit);
-  //   await USD.approve(PLMR1.address, token2ToDeposit);
+    expect(
+      await USD.balanceOf(
+        alice.address,
+      ),
+    ).to.equal(
+      PLMR1_token2ToDeposit.add(PLMR1_token2DepositFee),
+    );
 
-  //   await PLMR1.mintPLMR(parseEther("1"));
+    // Now I need to approve spending these! Deposit + fee
+    await BTC.connect(alice).approve(
+      PLMR1_contract.address,
+      PLMR1_token1ToDeposit.add(PLMR1_token1DepositFee),
+    );
+    await USD.connect(alice).approve(
+      PLMR1_contract.address,
+      PLMR1_token2ToDeposit.add(PLMR1_token2DepositFee),
+    );
 
-  //   expect(await PLMR1.balanceOf(owner.address)).to.equal(parseEther("1"));
+    // Now I am ready to mint! There are no tokens so far...
+    expect(await PLMR1_contract.totalSupply()).to.equal(0);
 
-  //   // I want eth 0.2 and  eur 1000
-  //   const plmr2Token = {
-  //     token1Addr: ETH.address,
-  //     token1Rate: 2,
-  //     token1Decimals: 1, // I want 3 decimals
-  //     token2Addr: EUR.address,
-  //     token2Rate: 1000,
-  //     token2Decimals: 0,
-  //   };
+    // Minting now!
 
-  //   // Now I deploy HPLRM2 with EUR/ETH backing
+    await PLMR1_contract.connect(alice).mintPLMR(PLMR1_mintAmount);
+    // The owner got the tokens minted
+    expect(await PLMR1_contract.balanceOf(alice.address)).to.equal(
+      PLMR1_mintAmount,
+    );
+    expect(await PLMR1_contract.totalSupply()).to.equal(parseEther("1"));
 
-  //   const newTx = await registry.createNewPLMR(
-  //     plmr2Token.token1Addr,
-  //     plmr2Token.token1Rate,
-  //     plmr2Token.token1Decimals,
-  //     plmr2Token.token2Addr,
-  //     plmr2Token.token2Rate,
-  //     plmr2Token.token2Decimals,
-  //   );
-  //   await newTx.wait();
-  //   index = await registry.lastIndex();
-  //   registeredDetails = await registry.polymers(index);
-  //   details = await registeredDetails;
+    expect(await PLMR1_contract.balanceOf(alice.address)).to.equal(
+      parseEther("1"),
+    );
 
-  //   const H_PLMR2 = await polymerFactory.attach(details.polymerAddress);
+    expect(await BTC.balanceOf(alice.address)).to.equal(
+      parseEther("0"),
+    );
 
-  //   const hplrm2Backing = await H_PLMR2.getBacking();
-  //   expect(hplrm2Backing[0]).to.equal(ETH.address);
-  //   expect(hplrm2Backing[1]).to.equal(plmr2Token.token1Rate);
-  //   expect(hplrm2Backing[2]).to.equal(plmr2Token.token1Decimals);
-  //   expect(hplrm2Backing[3]).to.equal(plmr2Token.token2Addr);
-  //   expect(hplrm2Backing[4]).to.equal(plmr2Token.token2Rate);
-  //   expect(hplrm2Backing[5]).to.equal(plmr2Token.token2Decimals);
+    expect(
+      await USD.balanceOf(
+        alice.address,
+      ),
+    ).to.equal(
+      parseEther("0"),
+    );
 
-  //   // redeem tokens
-  //   // Try to redeem without having any tokens
-  //   errorOccured = true;
-  //   try {
-  //     await PLMR1.connect(alice).redeemPLMR(parseEther("100"));
-  //   } catch (err: any) {
-  //     errorOccured = true;
-  //     errorMessage = err.message;
-  //   }
+    await PLMR1_contract.connect(alice).transfer(bob.address, parseEther("1"));
+    expect(await PLMR1_contract.balanceOf(alice.address)).to.equal(
+      parseEther("0"),
+    );
+    expect(await PLMR1_contract.balanceOf(bob.address)).to.equal(
+      parseEther("1"),
+    );
 
-  //   expect(errorOccured).to.be.true;
-  //   expect(errorMessage.includes("ERC20: burn amount exceeds balance")).to.be
-  //     .true;
+    //NOW REDEEM IT!
 
-  //   // Now I will redeem the backing and destroy the token!
+    expect(await BTC.balanceOf(bob.address)).to.equal(parseEther("0"));
+    expect(await USD.balanceOf(bob.address)).to.equal(parseEther("0"));
 
-  //   // Now I transfer it to alice who will redeem it
+    await PLMR1_contract.connect(bob).redeemPLMR(parseEther("1"));
 
-  //   await PLMR1.transfer(alice.address, parseEther("1"));
+    expect(await BTC.balanceOf(bob.address)).to.equal(PLMR1_token1ToDeposit);
+    expect(await USD.balanceOf(bob.address)).to.equal(PLMR1_token2ToDeposit);
 
-  //   expect(await PLMR1.balanceOf(alice.address)).to.equal(parseEther("1"));
-  //   expect(await PLMR1.balanceOf(owner.address)).to.equal(parseEther("0"));
-
-  //   // I redeem half only!
-  //   await PLMR1.connect(alice).redeemPLMR(parseEther("0.5"));
-  //   expect(await BTC.balanceOf(alice.address)).to.equal(parseEther("0.0005"));
-  //   expect(await USD.balanceOf(alice.address)).to.equal(parseEther("500"));
-  // });
-
-  it("Test finding and traversing the DAG", async function () {});
+    // And Bob redeemed it now and all tokens are burned!!
+    expect(await PLMR1_contract.totalSupply()).to.equal(parseEther("0"));
+  });
 });
