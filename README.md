@@ -164,9 +164,93 @@ Each PLMR token is an element in DAG which are stored in the registry in a list.
 
 The list provides a simple `getAllPolymers()` and `getPolymerByIndex(uint256)` function to access the DAG or an element in it by index. to fetch and recompute the DAG to explore it on the front end.
 
+The Dag is computed with a generateDag function on the client side. The structure is the following:
+
+The Dag contains the actual amount of value in the PLMR token, and the children's Amount is related the parent's Amount.
+In the below example, 1 PLMR7 contains 0.001 PLMR4 and 1000 USD tokens. The PLMR4 tokens contain 0.001BTC but since PLMR7 only contain 0.001PLMR4 the BTC children Amount is adjusted to  0.00001 show the actual value that the Dag contains.
 
 
-...TODO COmputing the DAG
-
-
-### TODO: DEPLOY FRONT END VIA GITHUB PAGES
+THIS IS AN EXAMPLE FROM THE UNIT TESTS.
+```
+{
+  "name": "PLMR7",
+  "attributes": {
+    "Amount": "1"
+  },
+  "children": [
+    {
+      "name": "PLMR4",
+      "attributes": {
+        "Amount": "0.001"
+      },
+      "children": [
+        {
+          "name": "BTC",
+          "attributes": {
+            "Amount": "0.00001"
+          },
+          "metadata": {
+            "address": "0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690",
+            "symbol": "BTC",
+            "rate": {
+              "type": "BigNumber",
+              "hex": "0x01"
+            },
+            "decimalShift": 2,
+            "isPlmr": false
+          }
+        },
+        {
+          "name": "ETH",
+          "attributes": {
+            "Amount": "0.001"
+          },
+          "metadata": {
+            "address": "0xa82fF9aFd8f496c3d6ac40E2a0F282E47488CFc9",
+            "symbol": "ETH",
+            "rate": {
+              "type": "BigNumber",
+              "hex": "0x01"
+            },
+            "decimalShift": 0,
+            "isPlmr": false
+          }
+        }
+      ],
+      "metadata": {
+        "address": "0xCe751D8399639157268a55F12e6f2aB081d49c72",
+        "symbol": "PLMR4",
+        "rate": {
+          "type": "BigNumber",
+          "hex": "0x01"
+        },
+        "decimalShift": 3,
+        "isPlmr": true
+      }
+    },
+    {
+      "name": "USD",
+      "attributes": {
+        "Amount": "1000.0"
+      },
+      "metadata": {
+        "address": "0x84eA74d481Ee0A5332c457a4d796187F6Ba67fEB",
+        "symbol": "USD",
+        "rate": {
+          "type": "BigNumber",
+          "hex": "0x03e8"
+        },
+        "decimalShift": 0,
+        "isPlmr": false
+      }
+    }
+  ],
+  "metadata": {
+    "address": "0x36d0628764E81B52814241c86B8De5cbF3C6333e",
+    "symbol": "PLMR7",
+    "rate": 1,
+    "decimalShift": 0,
+    "isPlmr": true
+  }
+}
+```
