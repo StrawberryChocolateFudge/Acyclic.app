@@ -9,19 +9,14 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./clone/CloneFactory.sol";
 import "./clone/FactoryContractVerifier.sol";
-import "./interfaces/IPolymerRegistry.sol";
+import "./interfaces/IGraphStore.sol";
 
-//  _______  _______  _              _______  _______  _______
-// (  ____ )(  ___  )( \   |\     /|(       )(  ____ \(  ____ )
-// | (    )|| (   ) || (   ( \   / )| () () || (    \/| (    )|
-// | (____)|| |   | || |    \ (_) / | || || || (__    | (____)|
-// |  _____)| |   | || |     \   /  | |(_)| ||  __)   |     __)
-// | (      | |   | || |      ) (   | |   | || (      | (\ (
-// | )      | (___) || (____/\| |   | )   ( || (____/\| ) \ \__
-// |/       (_______)(_______/\_/   |/     \|(_______/|/   \__/
-
-// This is a modified token contract that allows wrapping 2 tokens to combine them and mint a new one, or to redeem the wrapped tokens.
-contract Polymer is
+// ╔╦╗┌─┐┬┌─┌─┐┌┐┌┬┌─┐┌─┐┌┬┐  ╔═╗┌─┐┬ ┬┌─┐┬  ┬┌─┐  ╔═╗┬─┐┌─┐┌─┐┬ ┬
+//  ║ │ │├┴┐├┤ ││││┌─┘├┤  ││  ╠═╣│  └┬┘│  │  ││    ║ ╦├┬┘├─┤├─┘├─┤
+//  ╩ └─┘┴ ┴└─┘┘└┘┴└─┘└─┘─┴┘  ╩ ╩└─┘ ┴ └─┘┴─┘┴└─┘  ╚═╝┴└─┴ ┴┴  ┴ ┴
+// This is a modified token contract that allows wrapping 2 tokens to combine them, or to unwrap them
+// The token contracts contents can be visualised as a DAG
+contract AGPH is
     Context,
     IERC20,
     IERC20Metadata,
@@ -29,7 +24,7 @@ contract Polymer is
     Initializable
 {
     bytes32 private constant _ONDEPLOYRETURN =
-        keccak256("PolymerRegistry.onCreateNewPLMR");
+        keccak256("GraphStore.onCreateNewAGPH");
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -46,13 +41,13 @@ contract Polymer is
     uint256 private _token2Rate;
     uint8 private _token2DecimalShift;
 
-    address private registryAddress;
+    address private storeAddress;
 
-    event MintPLMR(address to, uint256 amount);
-    event RedeemPLMR(address to, uint256 amount);
+    event WrapAGPH(address to, uint256 amount);
+    event UnwrapAGPH(address to, uint256 amount);
 
     /**
-     * @dev Create a new Polymer token by initializing a cloned contract
+     * @dev Create a new Graph token by initializing a cloned contract
      * @param name_ Sets the name and the symbol. name_[0] is the name of the token, name_[1] is the symbol
      * @param tokenAddr_ Sets the address of the token used for backing this token. tokenAddr[0] is for token1Addr and tokenAddr[1] is for token2Addr
      * @param tokenRate_ Sets the rate of tokens needed to be transferred here to back this token. tokenRate_[0] is for token1Rate and tokenRate_[1] is for token2Rate
@@ -64,10 +59,10 @@ contract Polymer is
         uint256[2] memory tokenRate_,
         uint8[2] memory tokenDecimalShift_
     ) external initializer {
-        // Only a valid registry can initialize this contract
+        // Only a valid GraphStore can initialize this contract
         require(
             verifier.checkFactoryBytecode(msg.sender),
-            "Only registry can initialize"
+            "Only GraphStore can initialize"
         );
         // The name and the symbols are the same for PLMR tokens
         _name = name_[0];
@@ -80,26 +75,26 @@ contract Polymer is
         _token2DecimalShift = tokenDecimalShift_[1];
         // Will make sure the deployer is a contract because that's where the flashLoan fees will come from!
         require(
-            IPolymerRegistry(msg.sender).onCreateNewPLMR() == _ONDEPLOYRETURN,
-            "Only Registry"
+            IGraphStore(msg.sender).onCreateNewAGPH() == _ONDEPLOYRETURN,
+            "Only GraphStore"
         );
-        registryAddress = msg.sender;
+        storeAddress = msg.sender;
     }
 
     /**
     * @dev : How calculateTokenDeposits works?
-    * The amount represents the amount of PLMR tokens I want to mint or redeem
+    * The amount represents the amount of AGPH tokens I want to wrap or unwrap
     * The amount is in wei always and the rate represents how many tokens I need per wei.
     * The decimalShift is used to implement decimal numbers. It will be used as a power of 10.
 
-    * Example: I want 1 PLMR token so amount is 1 and wrap 0.001 BTC in it , then I use (amount 1 * rate 1) / 10**3
-    * If I want 1 PLMR token to contain 0.69 BTC, then I use (amount 1 * rate 69) /10 ** 2
+    * Example: I want 1 AGPH token so amount is 1 and wrap 0.001 BTC in it , then I use (amount 1 * rate 1) / 10**3
+    * If I want 1 AGPH token to contain 0.69 BTC, then I use (amount 1 * rate 69) /10 ** 2
 
     */
     function calculateTokenDeposits(
-        uint256 amount, // The amount of PLMR tokens I want to get, in WEI
+        uint256 amount, // The amount of AGPH tokens I want to get, in WEI
         uint256 rate,
-        uint8 _decimalShift // Dividing the token deposit, divider is 18 max,I divide with 10^1 to 10^18, if divider is 0 then I can't divide. Checks are implemented in the registry.
+        uint8 _decimalShift // Dividing the token deposit, divider is 18 max,I divide with 10^1 to 10^18, if divider is 0 then I can't divide. Checks are implemented in the store.
     ) public pure returns (uint256) {
         uint256 depositRate = rate.mul(amount);
         return depositRate.div(10 ** _decimalShift);
@@ -107,7 +102,7 @@ contract Polymer is
 
     /**
      * @dev
-     * Only external ERC-20 tokens have fees. Registered PLMR tokens don't!
+     * Only external ERC-20 tokens have fees. AGPH tokens don't!
      * The calculateFee takes the amount, fetches the fee divider from the registry and divides the amount with it.
      * This function is only used for depositing value. It also must be called by the front end to calculate how much to approve before making a deposit.
      * Example:
@@ -123,18 +118,18 @@ contract Polymer is
         address _token
     ) public view returns (uint256) {
         // If the deposited token is a registered address then there are no fees
-        if (IPolymerRegistry(registryAddress).isPolymerAddress(_token)) {
+        if (IGraphStore(storeAddress).isAGPHAddress(_token)) {
             return 0;
         } else {
             // Else we divide the amount with the feeDivider to calculate the fee
-            uint256 feeDivider = IPolymerRegistry(registryAddress)
-                .getFeeDivider();
+            uint256 feeDivider = IGraphStore(storeAddress).getFeeDivider();
             return amount.div(feeDivider);
         }
     }
 
-    // Add a mint function that requires transfer of token1 and token2 to this contract and then mints 1 token for it
-    function mintPLMR(uint256 amount) external nonReentrant {
+    // A function that transfers token1 and token2 to this contract and then mints an AGPH token for it
+    // Requires ERC-20 approval to work
+    function wrapAGPH(uint256 amount) external nonReentrant {
         // Transfer tokens here from the sender's address calculate how much I need
         address sender = _msgSender();
 
@@ -162,7 +157,7 @@ contract Polymer is
 
         // Now mint the token amount to the owner
         _mint(sender, amount);
-        emit MintPLMR(sender, amount);
+        emit WrapAGPH(sender, amount);
     }
 
     // Transfer tokens on behalf of their owner
@@ -177,12 +172,12 @@ contract Polymer is
     // Transfer the fee to the feeReceiver
     function _forwardFee(address tokenAddress, uint256 feeAmount) internal {
         IERC20(tokenAddress).transfer(
-            IPolymerRegistry(registryAddress).getFeeReceiver(),
+            IGraphStore(storeAddress).getFeeReceiver(),
             feeAmount
         );
     }
 
-    // Withdraw the tokens after redeeming them
+    // Withdraw the tokens after unwrapping them
     function _withdrawTokens(
         address _token,
         address to,
@@ -191,8 +186,8 @@ contract Polymer is
         IERC20(_token).transfer(to, amount);
     }
 
-    //  The redeem function that requires the user to have tokens and will burn it and transfer the backing back to the sender
-    function redeemPLMR(uint256 amount) external nonReentrant {
+    //  The unwrap function requires the user to have tokens and will burn it and transfer the backing back to the sender
+    function unwrapAGPH(uint256 amount) external nonReentrant {
         address sender = _msgSender();
         // Burn the tokens, the burn function checks if the sender actually owns the balance!
         _burn(sender, amount);
@@ -212,11 +207,11 @@ contract Polymer is
         _withdrawTokens(_token1Addr, sender, token1Withdraw);
         _withdrawTokens(_token2Addr, sender, token2Withdraw);
 
-        emit RedeemPLMR(sender, amount);
+        emit UnwrapAGPH(sender, amount);
     }
 
     /**
-      @dev returns the details of the backing tokens! 1 PLMR must be backed by 2 tokens always.
+      @dev returns the details of the backing tokens! 1 AGPH must be backed by 2 tokens always.
      */
     function getBacking()
         public

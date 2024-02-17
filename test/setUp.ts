@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import { parseEther } from "ethers/lib/utils";
 
-export async function setUpPLRM(): Promise<any> {
+export async function setUpAGPH(): Promise<any> {
   const [owner, alice, bob] = await ethers.getSigners();
 
   // Deploy a couple of ERC20 tokens with different names and symbols for testing!
@@ -30,7 +30,7 @@ export async function setUpPLRM(): Promise<any> {
   const ETHDeploy = await ETHFactory.deploy("ETH", "ETH", parseEther("100"));
   const ETH = await ETHDeploy.deployed();
 
-  // Deploy the RequestedTokens contract first to request tokens to be used by the registry
+  // Deploy the RequestedTokens contract first to request tokens to be used by the graphStore
   const RequestedTokensFactory = await ethers.getContractFactory(
     "RequestedTokens",
   );
@@ -43,20 +43,22 @@ export async function setUpPLRM(): Promise<any> {
   const factoryContractVerifier = await FactoryContractVerifier.deploy();
   const factorycontractverifier = await factoryContractVerifier.deployed();
 
-  const plrmTokenLibFactory = await ethers.getContractFactory("Polymer", {
+  const agphTokenLibFactory = await ethers.getContractFactory("AGPH", {
     libraries: { FactoryContractVerifier: factorycontractverifier.address },
   });
-  const plmrTokenLibDepl = await plrmTokenLibFactory.deploy();
-  const plmrTokenLib = await plmrTokenLibDepl.deployed();
-  // Then deploy the PolymerRegistry!
-  const registryFactory = await ethers.getContractFactory("PolymerRegistry");
-  const registryDeploy = await registryFactory.deploy(
+  const agphTokenLibDepl = await agphTokenLibFactory.deploy();
+  const agphTokenLib = await agphTokenLibDepl.deployed();
+  // Then deploy the graphStore!
+  const graphStoreFactory = await ethers.getContractFactory(
+    "GraphStore",
+  );
+  const graphStoreDeploy = await graphStoreFactory.deploy(
     500,
     requestedTokens.address,
-    plmrTokenLib.address,
+    agphTokenLib.address,
   ); // 500 for a 0.5 percent deposit fee on both tokens
 
-  const registry = await registryDeploy.deployed();
+  const graphStore = await graphStoreDeploy.deployed();
   return {
     owner,
     BTC,
@@ -65,8 +67,8 @@ export async function setUpPLRM(): Promise<any> {
     ETH,
     alice,
     bob,
-    registry,
+    graphStore,
     requestedTokens,
-    polymerFactory: plrmTokenLibFactory,
+    agphFactory: agphTokenLibFactory,
   };
 }

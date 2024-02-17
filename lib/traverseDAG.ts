@@ -20,20 +20,20 @@ export function isNone(opts: Option<any>): boolean {
   return opts.result === Result.NONE;
 }
 
-export type PLMR = {
-  plmrName: string;
-  plmrSymbol: string;
-  polymerAddress: string;
+export type AGPH = {
+  agphName: string;
+  agphSymbol: string;
+  agphAddress: string;
   token1Addr: string;
   token1Symbol: string;
   token1Rate: number;
   token1DecimalShift: number;
-  token1IsPlmr: boolean;
+  token1IsAgph: boolean;
   token2Addr: string;
   token2Symbol: string;
   token2Rate: number;
   token2DecimalShift: number;
-  token2IsPlmr: boolean;
+  token2IsAgph: boolean;
 };
 
 // This is the interface used for the react-d3-tree chart that will display the Dag
@@ -45,7 +45,7 @@ export interface RawNodeDatum {
 }
 
 // This is an extended RawNodeDatum interface that can store more data
-// This exists on both PLMR tokens and ERC20 tokens
+// This exists on both AGPH tokens and ERC20 tokens
 // This will be converted into RawNodeDatum easily later
 export interface Dag {
   name: string;
@@ -53,41 +53,41 @@ export interface Dag {
   children?: Dag[];
   metadata: TokenMetadata;
 }
-// The token metadata exists for both PLMR and external token contracts
+// The token metadata exists for both AGPH and external token contracts
 export type TokenMetadata = {
   address: string;
   symbol: string;
   rate: number;
   decimalShift: number;
-  isPlmr: boolean;
+  isAgph: boolean;
 };
 
-export type RegisterNewPLMRToken1 = {
+export type RegisterNewAgphToken1 = {
   token1Addr: string;
   token1Rate: number;
   token1DecimalShift: number;
 };
 
-export type RegisterNewPLMRToken2 = {
+export type RegisterNewAgphToken2 = {
   token2Addr: string;
   token2Rate: number;
   token2DecimalShift: number;
 };
 
-export type RegisterNewPLMRArgs = RegisterNewPLMRToken1 & RegisterNewPLMRToken2;
+export type RegisterNewAgphArgs = RegisterNewAgphToken1 & RegisterNewAgphToken2;
 
 // Takes the symbol of a ERC-20 token and checks if it's a PLMR token
-// The schema is <PLMR><INDEX> which is a number
-// If Option.result is SOME, then it's a valid PLMR contract and returns the index
-// Else if Option.result NONE then it's not a valid PLMR contract and returns an error message and zero.
-export function getPLMRIndex(symbl: string): Option<number> {
-  const PLMR = symbl.substring(0, 4);
+// The schema is <AGPH><INDEX> which is a number
+// If Option.result is SOME, then it's a valid AGPH contract and returns the index
+// Else if Option.result NONE then it's not a valid AGPH contract and returns an error message and zero.
+export function getAGPHIndex(symbl: string): Option<number> {
+  const AGPH = symbl.substring(0, 4);
   const INDEX = symbl.substring(4, symbl.length);
-  if (PLMR !== "PLMR") {
+  if (AGPH !== "AGPH") {
     return {
       result: Result.NONE,
       data: 0,
-      error: "Not PLMR contract",
+      error: "Not AGPH contract",
     };
   }
   try {
@@ -111,21 +111,21 @@ export function getPLMRIndex(symbl: string): Option<number> {
 }
 
 // The polymer array index is the naming index -1
-export function getPLMRArrayIndex(index: number) {
+export function getAGPHArrayIndex(index: number) {
   return index - 1;
 }
 
-// To get the Dag belonging to a PLMR token, we first fetch the list of all PLMR tokens from the blockchain
-// The symbol is the symbol of the top level PLMR token
+// To get the Dag belonging to a AGPH token, we first fetch the list of all AGPH tokens from the blockchain
+// The symbol is the symbol of the top level AGPH token
 // Asset amount will let me control the calculations of how much value is in the token, it should default to 1 on the front end, then it's adjustable
 export function generateDag(
-  plmrList: PLMR[],
+  agphList: AGPH[],
   symbol: string,
   assetAmount: string,
 ): Option<Dag> {
-  const plmrOptions = getPLMRIndex(symbol);
+  const agphOptions = getAGPHIndex(symbol);
 
-  if (isNone(plmrOptions)) {
+  if (isNone(agphOptions)) {
     //The name is not a plmr token and I can't start making a Dag
     return {
       result: Result.NONE,
@@ -134,12 +134,12 @@ export function generateDag(
     };
   }
 
-  // It definitely is PLMR and has 2 children and exists in the list,
+  // It definitely is AGPH and has 2 children and exists in the list,
   // I find the element index in the array
-  const plmrIndex = getPLMRArrayIndex(plmrOptions.data);
-  const element = plmrList[plmrIndex];
+  const agphIndex = getAGPHArrayIndex(agphOptions.data);
+  const element = agphList[agphIndex];
 
-  // It returns a Some, with the PLMR
+  // It returns a Some, with the AGPH
   return {
     result: Result.SOME,
     data: {
@@ -148,7 +148,7 @@ export function generateDag(
         Amount: assetAmount,
       },
       children: findChildren(
-        plmrList,
+        agphList,
         symbol,
         true,
         assetAmount,
@@ -159,37 +159,37 @@ export function generateDag(
   };
 }
 
-// Find the child nodes in the Dag, this function is recursive until it finds the nodes that are not PLMR nodes
+// Find the child nodes in the Dag, this function is recursive until it finds the nodes that are not AGPH nodes
 function findChildren(
-  plmrList: PLMR[],
+  agphList: AGPH[],
   symbol: string,
-  isPLMRNode: boolean,
+  isAGPhNode: boolean,
   assetAmount: string,
 ): Dag[] | undefined {
-  //Base case, the node is not PLMR, so no children!
-  if (!isPLMRNode) {
+  //Base case, the node is not AGPH, so no children!
+  if (!isAGPhNode) {
     return undefined;
   }
 
   // Decode the index from the symbol
-  const options = getPLMRIndex(symbol);
+  const options = getAGPHIndex(symbol);
 
   // Find the array index of the PLMR token to parse
-  const index = getPLMRArrayIndex(options.data);
+  const index = getAGPHArrayIndex(options.data);
   // Take it from the list
-  const element = plmrList[index];
+  const element = agphList[index];
   //Return the child nodes and calculate deposit for token1 and token2
 
   const token1DepositAmount = calculateTokenDeposit(
-          assetAmount,
-          element.token1Rate,
-          element.token1DecimalShift,
-        );
+    assetAmount,
+    element.token1Rate,
+    element.token1DecimalShift,
+  );
   const token2DepositAmount = calculateTokenDeposit(
-          assetAmount,
-          element.token2Rate,
-          element.token2DecimalShift,
-        );
+    assetAmount,
+    element.token2Rate,
+    element.token2DecimalShift,
+  );
 
   return [
     {
@@ -203,9 +203,9 @@ function findChildren(
         ),
       },
       children: findChildren(
-        plmrList,
+        agphList,
         element.token1Symbol,
-        element.token1IsPlmr,
+        element.token1IsAgph,
         token1DepositAmount,
       ),
       metadata: getToken1Metadata(element),
@@ -220,9 +220,9 @@ function findChildren(
         ),
       },
       children: findChildren(
-        plmrList,
+        agphList,
         element.token2Symbol,
-        element.token2IsPlmr,
+        element.token2IsAgph,
         token2DepositAmount,
       ),
       metadata: getToken2Metadata(element),
@@ -243,8 +243,8 @@ export function calculateTokenDeposit(
   return formatEther(shifted);
 }
 //This is used for calculating the fee to deposit for a mint, on the front end!
-// Only call this if the tokenDeposit is not a PLMR token, those have no deposit fees
-//The feeDivider is fetched before from the registry contract and passed in.
+// Only call this if the tokenDeposit is not a AGPh token, those have no deposit fees
+//The feeDivider is fetched before from the store contract and passed in.
 export function calculateDepositFeeForToken(
   tokenDeposit: string,
   feeDivider: BigNumber,
@@ -281,41 +281,41 @@ export function convertDecimalNumberStringToRateAndDecimalShift(
   }
 }
 
-function getTopLevelNodeMetadata(from: PLMR): TokenMetadata {
+function getTopLevelNodeMetadata(from: AGPH): TokenMetadata {
   return {
-    address: from.polymerAddress,
-    symbol: from.plmrSymbol,
+    address: from.agphAddress,
+    symbol: from.agphSymbol,
     rate: 1,
     decimalShift: 0,
-    isPlmr: true,
+    isAgph: true,
   };
 }
 
-function getToken1Metadata(from: PLMR): TokenMetadata {
+function getToken1Metadata(from: AGPH): TokenMetadata {
   return {
     address: from.token1Addr,
     symbol: from.token1Symbol,
     rate: from.token1Rate,
     decimalShift: from.token1DecimalShift,
-    isPlmr: from.token1IsPlmr,
+    isAgph: from.token1IsAgph,
   };
 }
 
-function getToken2Metadata(from: PLMR): TokenMetadata {
+function getToken2Metadata(from: AGPH): TokenMetadata {
   return {
     address: from.token2Addr,
     symbol: from.token2Symbol,
     rate: from.token2Rate,
     decimalShift: from.token2DecimalShift,
-    isPlmr: from.token2IsPlmr,
+    isAgph: from.token2IsAgph,
   };
 }
 
-export function buildToken1_RegisterPlmrParams(
+export function buildToken1_RegisterAgphParams(
   addr: string,
   rate: number,
   shift: number,
-): RegisterNewPLMRToken1 {
+): RegisterNewAgphToken1 {
   return {
     token1Addr: addr,
     token1Rate: rate,
@@ -323,11 +323,11 @@ export function buildToken1_RegisterPlmrParams(
   };
 }
 
-export function buildToken2_RegisterPlmrParams(
+export function buildToken2_RegisterAgphParams(
   addr: string,
   rate: number,
   shift: number,
-): RegisterNewPLMRToken2 {
+): RegisterNewAgphToken2 {
   return {
     token2Addr: addr,
     token2Rate: rate,

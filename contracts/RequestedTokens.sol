@@ -18,7 +18,7 @@ import "./interfaces/IRequestedTokens.sol";
 // Once a token is approved to be used by the registry it can't be removed.
 // The purpose of this contract is to restrict what tokens can be used, to avoid anything with a malicious transfer or transferFrom function to make it into a derivative somewhere.
 // This  contract supports DAO integration in the future by implementing a DAO contract to call these functions and transferring ownership to it.
-// With DAOification the decision process of what token should be allowed to be polymerized would be decentralized.
+// With DAOification the decision process of what token should be allowed could be decentralized.
 
 contract RequestedTokens is Ownable,IRequestedTokens {
     mapping(address => TokenStatus) private status;

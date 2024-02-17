@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 // The initialization interface used with the factory deployment pattern
-interface IInitialzablePolymer {
+interface IInitialzableAGPH {
     // The interface
     function initialize(
         string[2] memory name_,

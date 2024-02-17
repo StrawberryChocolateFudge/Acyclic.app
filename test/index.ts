@@ -1,27 +1,36 @@
 import { expect } from "chai";
 import { formatEther, parseEther } from "ethers/lib/utils";
 import { ethers } from "hardhat";
-import { setUpPLRM } from "./setUp";
+import { setUpAGPH } from "./setUp";
 import {
-  buildToken1_RegisterPlmrParams,
-  buildToken2_RegisterPlmrParams,
+  AGPH,
+  buildToken1_RegisterAgphParams,
+  buildToken2_RegisterAgphParams,
   calculateDepositFeeForToken,
   calculateTokenDeposit,
   Dag,
   generateDag,
-  getPLMRArrayIndex,
-  getPLMRIndex,
+  getAGPHArrayIndex,
+  getAGPHIndex,
   Option,
-  PLMR,
-  RegisterNewPLMRArgs,
+  RegisterNewAgphArgs,
   Result,
 } from "../lib/traverseDAG";
 import { BigNumber } from "ethers/lib/ethers";
 
-describe("Polymer registry", function () {
-  it("Should test token requests and registry", async function () {
-    const { owner, BTC, USD, EUR, ETH, alice, bob, registry, requestedTokens } =
-      await setUpPLRM();
+describe("graphStore", function () {
+  it("Should test token requests and graphStore", async function () {
+    const {
+      owner,
+      BTC,
+      USD,
+      EUR,
+      ETH,
+      alice,
+      bob,
+      graphStore,
+      requestedTokens,
+    } = await setUpAGPH();
 
     expect(await requestedTokens.getStatus(BTC.address)).to.equal(0);
     // Request a new token
@@ -84,7 +93,7 @@ describe("Polymer registry", function () {
     errorMessage = "";
 
     try {
-      await registry.connect(bob).createNewPLMR(
+      await graphStore.connect(bob).createNewAGPH(
         token1Addr,
         token1Rate,
         token1DecimalShift,
@@ -148,9 +157,9 @@ describe("Polymer registry", function () {
     errorOccured = false;
     errorMessage = "";
 
-    expect(await registry.lastIndex()).to.equal(0);
+    expect(await graphStore.lastIndex()).to.equal(0);
 
-    await registry.connect(bob).createNewPLMR(
+    await graphStore.connect(bob).createNewAGPH(
       token1Addr,
       token1Rate,
       token1DecimalShift,
@@ -159,11 +168,11 @@ describe("Polymer registry", function () {
       token2DecimalShift,
       { value: parseEther("0") },
     );
-    expect(await registry.lastIndex()).to.equal(1);
+    expect(await graphStore.lastIndex()).to.equal(1);
   });
 
-  it("Testing deployed plmr data fetching", async function () {
-    // Setup a plmr contract to be able to start calculating deposits and fees
+  it("Testing deployed agph data fetching", async function () {
+    // Setup a agph contract to be able to start calculating deposits and fees
     const {
       owner,
       BTC,
@@ -172,10 +181,10 @@ describe("Polymer registry", function () {
       ETH,
       alice,
       bob,
-      registry,
+      graphStore,
       requestedTokens,
-      polymerFactory,
-    } = await setUpPLRM();
+      agphFactory,
+    } = await setUpAGPH();
 
     await requestedTokens.requestNewToken(
       BTC.address,
@@ -192,9 +201,12 @@ describe("Polymer registry", function () {
     let token2Rate = 1000;
     let token2DecimalShift = 0;
 
-    let deploymentFee = await registry.getDeploymentFee(token1Addr, token2Addr);
+    let deploymentFee = await graphStore.getDeploymentFee(
+      token1Addr,
+      token2Addr,
+    );
 
-    await registry.connect(bob).createNewPLMR(
+    await graphStore.connect(bob).createNewAGPH(
       token1Addr,
       token1Rate,
       token1DecimalShift,
@@ -204,40 +216,40 @@ describe("Polymer registry", function () {
       { value: deploymentFee },
     );
 
-    // Expect that the new PLMR exists!
-    let plmrs = await registry.getAllPolymers();
-    expect(plmrs.length).to.equal(1);
-    const plmr1 = plmrs[0];
-    expect(plmr1.plmrSymbol).to.equal("PLMR1");
-    expect(plmr1.plmrName).to.equal("PLMR1-BTC/USD");
-    expect(plmr1.token1Addr).to.equal(BTC.address);
-    expect(plmr1.token1Symbol).to.equal("BTC");
-    expect(plmr1.token1Rate).to.equal(1);
-    expect(plmr1.token1DecimalShift).to.equal(3);
+    // Expect that the new AGPH exists!
+    let agphs = await graphStore.getAllAGPH();
+    expect(agphs.length).to.equal(1);
+    const agph1 = agphs[0];
+    expect(agph1.agphSymbol).to.equal("AGPH1");
+    expect(agph1.agphName).to.equal("AGPH1-BTC/USD");
+    expect(agph1.token1Addr).to.equal(BTC.address);
+    expect(agph1.token1Symbol).to.equal("BTC");
+    expect(agph1.token1Rate).to.equal(1);
+    expect(agph1.token1DecimalShift).to.equal(3);
 
-    expect(plmr1.token2Addr).to.equal(USD.address);
-    expect(plmr1.token2Symbol).to.equal("USD");
-    expect(plmr1.token2Rate).to.equal(1000);
-    expect(plmr1.token2DecimalShift).to.equal(0);
+    expect(agph1.token2Addr).to.equal(USD.address);
+    expect(agph1.token2Symbol).to.equal("USD");
+    expect(agph1.token2Rate).to.equal(1000);
+    expect(agph1.token2DecimalShift).to.equal(0);
 
-    expect(await registry.isPolymerAddress(plmr1.polymerAddress)).to.equal(
+    expect(await graphStore.isAGPHAddress(agph1.agphAddress)).to.equal(
       true,
     );
 
-    // create a new PLMR contract to test isPolymerAddress checks when creating them
+    // create a new agph contract to test isAGPHAddress checks when creating them
 
     token1Addr = BTC.address;
     token1Rate = 1;
     token1DecimalShift = 3;
-    token2Addr = plmr1.polymerAddress;
+    token2Addr = agph1.agphAddress;
     token2Rate = 1;
     token2DecimalShift = 0;
 
-    // The PLMR2 token contains 0.001 BTC and 1 PLMR1 (which contains 0.001BTC and 1000USD)
+    // The AGPH2 token contains 0.001 BTC and 1 AGPH1 (which contains 0.001BTC and 1000USD)
 
-    deploymentFee = await registry.getDeploymentFee(token1Addr, token2Addr);
+    deploymentFee = await graphStore.getDeploymentFee(token1Addr, token2Addr);
 
-    await registry.connect(bob).createNewPLMR(
+    await graphStore.connect(bob).createNewAGPH(
       token1Addr,
       token1Rate,
       token1DecimalShift,
@@ -246,52 +258,52 @@ describe("Polymer registry", function () {
       token2DecimalShift,
       { value: deploymentFee },
     );
-    //this succeeds because PLMR1 don't need to be registered
-    plmrs = await registry.getAllPolymers();
-    expect(plmrs.length).to.equal(2);
-    const plmr2 = plmrs[1];
-    expect(plmr2.plmrSymbol).to.equal("PLMR2");
-    expect(plmr2.plmrName).to.equal("PLMR2-BTC/PLMR1");
-    expect(plmr2.token1Addr).to.equal(BTC.address);
-    expect(plmr2.token1Symbol).to.equal("BTC");
-    expect(plmr2.token1Rate).to.equal(1);
-    expect(plmr2.token1DecimalShift).to.equal(3);
+    //this succeeds because AGPH1 don't need to be registered
+    agphs = await graphStore.getAllAGPH();
+    expect(agphs.length).to.equal(2);
+    const agph2 = agphs[1];
+    expect(agph2.agphSymbol).to.equal("AGPH2");
+    expect(agph2.agphName).to.equal("AGPH2-BTC/AGPH1");
+    expect(agph2.token1Addr).to.equal(BTC.address);
+    expect(agph2.token1Symbol).to.equal("BTC");
+    expect(agph2.token1Rate).to.equal(1);
+    expect(agph2.token1DecimalShift).to.equal(3);
 
-    expect(plmr2.token2Addr).to.equal(plmr1.polymerAddress);
-    expect(plmr2.token2Symbol).to.equal("PLMR1");
-    expect(plmr2.token2Rate).to.equal(1);
-    expect(plmr2.token2DecimalShift).to.equal(0);
+    expect(agph2.token2Addr).to.equal(agph1.agphAddress);
+    expect(agph2.token2Symbol).to.equal("AGPH1");
+    expect(agph2.token2Rate).to.equal(1);
+    expect(agph2.token2DecimalShift).to.equal(0);
 
-    expect(await registry.isPolymerAddress(plmr2.polymerAddress)).to.equal(
+    expect(await graphStore.isAGPHAddress(agph2.agphAddress)).to.equal(
       true,
     );
     // Attach to the contract and test if the data is saved proper
-    const plmr2Contract = await polymerFactory.attach(plmr2.polymerAddress);
+    const agph2Contract = await agphFactory.attach(agph2.agphAddress);
 
-    const backing = await plmr2Contract.getBacking();
-    expect(await plmr2Contract.symbol()).to.equal("PLMR2");
-    expect(await plmr2Contract.name()).to.equal("PLMR2-BTC/PLMR1");
-    expect(await plmr2Contract.totalSupply()).to.equal(0);
-    expect(backing[0]).to.equal(plmr2.token1Addr);
-    expect(backing[1]).to.equal(plmr2.token1Rate);
-    expect(backing[2]).to.equal(plmr2.token1DecimalShift);
-    expect(backing[3]).to.equal(plmr2.token2Addr);
-    expect(backing[4]).to.equal(plmr2.token2Rate);
-    expect(backing[5]).to.equal(plmr2.token2DecimalShift);
+    const backing = await agph2Contract.getBacking();
+    expect(await agph2Contract.symbol()).to.equal("AGPH2");
+    expect(await agph2Contract.name()).to.equal("AGPH2-BTC/AGPH1");
+    expect(await agph2Contract.totalSupply()).to.equal(0);
+    expect(backing[0]).to.equal(agph2.token1Addr);
+    expect(backing[1]).to.equal(agph2.token1Rate);
+    expect(backing[2]).to.equal(agph2.token1DecimalShift);
+    expect(backing[3]).to.equal(agph2.token2Addr);
+    expect(backing[4]).to.equal(agph2.token2Rate);
+    expect(backing[5]).to.equal(agph2.token2DecimalShift);
 
-    // These are tests to make sure I can decode the PLMR index from it's symbol and access it in the allPolymers ARRAY!
-    let symbol = await plmr2Contract.symbol();
-    // I use the symbol of the PLMR contract to determine if it's valid and use it to access the array!
-    let PLMROptions = getPLMRIndex(symbol);
-    expect(PLMROptions.result).to.equal(Result.SOME);
-    let allPLMRS = await registry.getAllPolymers();
-    let plmrIndexFromResult = getPLMRArrayIndex(PLMROptions.data);
-    let currentPLMR = allPLMRS[plmrIndexFromResult];
-    expect(currentPLMR.plmrName).to.equal(await plmr2Contract.name());
+    // These are tests to make sure I can decode the AGPH index from it's symbol and access it in the allAgphss ARRAY!
+    let symbol = await agph2Contract.symbol();
+    // I use the symbol of the AGPH contract to determine if it's valid and use it to access the array!
+    let AGPHOptions = getAGPHIndex(symbol);
+    expect(AGPHOptions.result).to.equal(Result.SOME);
+    let allAGPHS = await graphStore.getAllAGPH();
+    let agphIndexFromResult = getAGPHArrayIndex(AGPHOptions.data);
+    let currentAGPH = allAGPHS[agphIndexFromResult];
+    expect(currentAGPH.agphName).to.equal(await agph2Contract.name());
   });
 
   it("Test fee and deposit calculations, solidity vs js", async function () {
-    // Test plmr1 calculateTokenDeposits and calculate Fee
+    // Test agph1 calculateTokenDeposits and calculate Fee
     const {
       owner,
       BTC,
@@ -300,10 +312,10 @@ describe("Polymer registry", function () {
       ETH,
       alice,
       bob,
-      registry,
+      graphStore,
       requestedTokens,
-      polymerFactory,
-    } = await setUpPLRM();
+      agphFactory,
+    } = await setUpAGPH();
 
     await requestedTokens.requestNewToken(
       BTC.address,
@@ -319,9 +331,12 @@ describe("Polymer registry", function () {
     let token2Addr = USD.address;
     let token2Rate = 1000;
     let token2DecimalShift = 0;
-    let deploymentFee = await registry.getDeploymentFee(token1Addr, token2Addr);
+    let deploymentFee = await graphStore.getDeploymentFee(
+      token1Addr,
+      token2Addr,
+    );
 
-    await registry.connect(bob).createNewPLMR(
+    await graphStore.connect(bob).createNewAGPH(
       token1Addr,
       token1Rate,
       token1DecimalShift,
@@ -330,14 +345,14 @@ describe("Polymer registry", function () {
       token2DecimalShift,
       { value: deploymentFee },
     );
-    let plmrs = await registry.getAllPolymers();
-    expect(plmrs.length).to.equal(1);
+    let agphs = await graphStore.getAllAGPH();
+    expect(agphs.length).to.equal(1);
     // Compare the javascript decimal shift function to the on-chain view function
 
-    const plmr1Contract = await polymerFactory.attach(plmrs[0].polymerAddress);
+    const agph1Contract = await agphFactory.attach(agphs[0].agphAddress);
 
     expect(
-      await plmr1Contract.calculateTokenDeposits(
+      await agph1Contract.calculateTokenDeposits(
         parseEther("1"),
         token1Rate,
         token1DecimalShift,
@@ -353,7 +368,7 @@ describe("Polymer registry", function () {
     );
 
     expect(
-      await plmr1Contract.calculateTokenDeposits(
+      await agph1Contract.calculateTokenDeposits(
         parseEther("0.2425"),
         token1Rate,
         token1DecimalShift,
@@ -368,15 +383,15 @@ describe("Polymer registry", function () {
       ),
     );
 
-    const feeDivider = await registry.getFeeDivider();
+    const feeDivider = await graphStore.getFeeDivider();
 
     // Now compare the fee calculations js vs solidity
     expect(
-      await plmr1Contract.calculateFee(parseEther("1"), token1Addr),
+      await agph1Contract.calculateFee(parseEther("1"), token1Addr),
     ).to.equal(calculateDepositFeeForToken("1", feeDivider));
 
     // To calculate the amount I need for minting on the client,
-    // I need to check if a the deposit is a plmr token, if it is then I don't add fee.
+    // I need to check if a the deposit is a agph token, if it is then I don't add fee.
     // So something like:
     let mintAmount = "1";
     const calculatedDeposit = calculateTokenDeposit(
@@ -400,10 +415,10 @@ describe("Polymer registry", function () {
       ETH,
       alice,
       bob,
-      registry,
+      graphStore,
       requestedTokens,
-      polymerFactory,
-    } = await setUpPLRM();
+      agphFactory,
+    } = await setUpAGPH();
 
     // I want to generate a massive DAG for testing with multiple children, BTC,USD, EUR, ETH, all that will go in.
 
@@ -421,190 +436,193 @@ describe("Polymer registry", function () {
     await requestedTokens.acceptTokenRequest(ETH.address);
     // Requested tokens setup done
 
-    const plmr1Params: RegisterNewPLMRArgs = {
-      ...buildToken1_RegisterPlmrParams(BTC.address, 1, 3), //0.001 BTC
-      ...buildToken2_RegisterPlmrParams(USD.address, 1000, 0), // 1000 USD
+    const agph1Params: RegisterNewAgphArgs = {
+      ...buildToken1_RegisterAgphParams(BTC.address, 1, 3), //0.001 BTC
+      ...buildToken2_RegisterAgphParams(USD.address, 1000, 0), // 1000 USD
     };
 
-    const plmr2Params: RegisterNewPLMRArgs = {
-      ...buildToken1_RegisterPlmrParams(ETH.address, 1, 1), // 0.1ETH
-      ...buildToken2_RegisterPlmrParams(EUR.address, 100, 0), // 100EUR
+    const agph2Params: RegisterNewAgphArgs = {
+      ...buildToken1_RegisterAgphParams(ETH.address, 1, 1), // 0.1ETH
+      ...buildToken2_RegisterAgphParams(EUR.address, 100, 0), // 100EUR
     };
 
-    const plmr3Params: RegisterNewPLMRArgs = {
-      ...buildToken1_RegisterPlmrParams(USD.address, 100, 0), //100 USD
-      ...buildToken2_RegisterPlmrParams(EUR.address, 100, 0), // 100 EUR
+    const agph3Params: RegisterNewAgphArgs = {
+      ...buildToken1_RegisterAgphParams(USD.address, 100, 0), //100 USD
+      ...buildToken2_RegisterAgphParams(EUR.address, 100, 0), // 100 EUR
     };
 
-    const plmr4Params: RegisterNewPLMRArgs = {
-      ...buildToken1_RegisterPlmrParams(BTC.address, 1, 2), // 0.01 BTC
-      ...buildToken2_RegisterPlmrParams(ETH.address, 1, 0), // 1 ETH
+    const agph4Params: RegisterNewAgphArgs = {
+      ...buildToken1_RegisterAgphParams(BTC.address, 1, 2), // 0.01 BTC
+      ...buildToken2_RegisterAgphParams(ETH.address, 1, 0), // 1 ETH
     };
 
-    let deploymentFee = await registry.getDeploymentFee(
-      plmr1Params.token1Addr,
-      plmr1Params.token2Addr,
+    let deploymentFee = await graphStore.getDeploymentFee(
+      agph1Params.token1Addr,
+      agph1Params.token2Addr,
     );
 
     // Now I register these now
-    await registry.connect(bob).createNewPLMR(
-      plmr1Params.token1Addr,
-      plmr1Params.token1Rate,
-      plmr1Params.token1DecimalShift,
-      plmr1Params.token2Addr,
-      plmr1Params.token2Rate,
-      plmr1Params.token2DecimalShift,
+    await graphStore.connect(bob).createNewAGPH(
+      agph1Params.token1Addr,
+      agph1Params.token1Rate,
+      agph1Params.token1DecimalShift,
+      agph1Params.token2Addr,
+      agph1Params.token2Rate,
+      agph1Params.token2DecimalShift,
       { value: deploymentFee },
     );
-    deploymentFee = await registry.getDeploymentFee(
-      plmr2Params.token1Addr,
-      plmr2Params.token2Addr,
+    deploymentFee = await graphStore.getDeploymentFee(
+      agph2Params.token1Addr,
+      agph2Params.token2Addr,
     );
 
-    await registry.connect(bob).createNewPLMR(
-      plmr2Params.token1Addr,
-      plmr2Params.token1Rate,
-      plmr2Params.token1DecimalShift,
-      plmr2Params.token2Addr,
-      plmr2Params.token2Rate,
-      plmr2Params.token2DecimalShift,
+    await graphStore.connect(bob).createNewAGPH(
+      agph2Params.token1Addr,
+      agph2Params.token1Rate,
+      agph2Params.token1DecimalShift,
+      agph2Params.token2Addr,
+      agph2Params.token2Rate,
+      agph2Params.token2DecimalShift,
       { value: deploymentFee },
     );
-    deploymentFee = await registry.getDeploymentFee(
-      plmr3Params.token1Addr,
-      plmr3Params.token2Addr,
+    deploymentFee = await graphStore.getDeploymentFee(
+      agph3Params.token1Addr,
+      agph3Params.token2Addr,
     );
 
-    await registry.connect(bob).createNewPLMR(
-      plmr3Params.token1Addr,
-      plmr3Params.token1Rate,
-      plmr3Params.token1DecimalShift,
-      plmr3Params.token2Addr,
-      plmr3Params.token2Rate,
-      plmr3Params.token2DecimalShift,
+    await graphStore.connect(bob).createNewAGPH(
+      agph3Params.token1Addr,
+      agph3Params.token1Rate,
+      agph3Params.token1DecimalShift,
+      agph3Params.token2Addr,
+      agph3Params.token2Rate,
+      agph3Params.token2DecimalShift,
       { value: deploymentFee },
     );
-    deploymentFee = await registry.getDeploymentFee(
-      plmr4Params.token1Addr,
-      plmr4Params.token2Addr,
+    deploymentFee = await graphStore.getDeploymentFee(
+      agph4Params.token1Addr,
+      agph4Params.token2Addr,
     );
 
-    await registry.connect(bob).createNewPLMR(
-      plmr4Params.token1Addr,
-      plmr4Params.token1Rate,
-      plmr4Params.token1DecimalShift,
-      plmr4Params.token2Addr,
-      plmr4Params.token2Rate,
-      plmr4Params.token2DecimalShift,
+    await graphStore.connect(bob).createNewAGPH(
+      agph4Params.token1Addr,
+      agph4Params.token1Rate,
+      agph4Params.token1DecimalShift,
+      agph4Params.token2Addr,
+      agph4Params.token2Rate,
+      agph4Params.token2DecimalShift,
       { value: deploymentFee },
     );
 
-    // Now I combine some PLMR tokens!
-    let plmr1 = await registry.getPolymerByIndex(0);
-    let plmr2 = await registry.getPolymerByIndex(1);
-    let plmr3 = await registry.getPolymerByIndex(2);
-    let plmr4 = await registry.getPolymerByIndex(3);
+    // Now I combine some AGPH tokens!
+    let agph1 = await graphStore.getAGPHByIndex(0);
+    let agph2 = await graphStore.getAGPHByIndex(1);
+    let agph3 = await graphStore.getAGPHByIndex(2);
+    let agph4 = await graphStore.getAGPHByIndex(3);
 
-    const plmr5Params: RegisterNewPLMRArgs = {
-      ...buildToken1_RegisterPlmrParams(plmr1.polymerAddress, 1, 0), //1 PLMR1
-      ...buildToken2_RegisterPlmrParams(plmr2.polymerAddress, 1, 0), //1 PLMR2
+    const agph5Params: RegisterNewAgphArgs = {
+      ...buildToken1_RegisterAgphParams(agph1.agphAddress, 1, 0), //1 AGPH1
+      ...buildToken2_RegisterAgphParams(agph2.agphAddress, 1, 0), //1 AGPH2
     };
 
-    const plmr6Params: RegisterNewPLMRArgs = {
-      ...buildToken1_RegisterPlmrParams(plmr3.polymerAddress, 1, 0), //1 PLMR3
-      ...buildToken2_RegisterPlmrParams(plmr4.polymerAddress, 1, 0), //1 PLMR4
+    const agph6Params: RegisterNewAgphArgs = {
+      ...buildToken1_RegisterAgphParams(agph3.agphAddress, 1, 0), //1 AGPH3
+      ...buildToken2_RegisterAgphParams(agph4.agphAddress, 1, 0), //1 AGPH4
     };
 
-    const plmr7Params: RegisterNewPLMRArgs = {
-      ...buildToken1_RegisterPlmrParams(plmr4.polymerAddress, 1, 3), //0.001 BTC
-      ...buildToken2_RegisterPlmrParams(USD.address, 1000, 0), // 1000 USD
+    const agph7Params: RegisterNewAgphArgs = {
+      ...buildToken1_RegisterAgphParams(agph4.agphAddress, 1, 3), //0.001 BTC
+      ...buildToken2_RegisterAgphParams(USD.address, 1000, 0), // 1000 USD
     };
 
-    const plmr8Params: RegisterNewPLMRArgs = {
-      ...buildToken1_RegisterPlmrParams(BTC.address, 1, 3), //0.001 BTC
-      ...buildToken2_RegisterPlmrParams(USD.address, 1000, 0), // 1000 USD
+    const agph8Params: RegisterNewAgphArgs = {
+      ...buildToken1_RegisterAgphParams(BTC.address, 1, 3), //0.001 BTC
+      ...buildToken2_RegisterAgphParams(USD.address, 1000, 0), // 1000 USD
     };
 
-    deploymentFee = await registry.getDeploymentFee(
-      plmr5Params.token1Addr,
-      plmr5Params.token2Addr,
+    deploymentFee = await graphStore.getDeploymentFee(
+      agph5Params.token1Addr,
+      agph5Params.token2Addr,
     );
 
-    await registry.connect(bob).createNewPLMR(
-      plmr5Params.token1Addr,
-      plmr5Params.token1Rate,
-      plmr5Params.token1DecimalShift,
-      plmr5Params.token2Addr,
-      plmr5Params.token2Rate,
-      plmr5Params.token2DecimalShift,
+    await graphStore.connect(bob).createNewAGPH(
+      agph5Params.token1Addr,
+      agph5Params.token1Rate,
+      agph5Params.token1DecimalShift,
+      agph5Params.token2Addr,
+      agph5Params.token2Rate,
+      agph5Params.token2DecimalShift,
       { value: deploymentFee },
     );
-    deploymentFee = await registry.getDeploymentFee(
-      plmr6Params.token1Addr,
-      plmr6Params.token2Addr,
+    deploymentFee = await graphStore.getDeploymentFee(
+      agph6Params.token1Addr,
+      agph6Params.token2Addr,
     );
 
-    await registry.connect(bob).createNewPLMR(
-      plmr6Params.token1Addr,
-      plmr6Params.token1Rate,
-      plmr6Params.token1DecimalShift,
-      plmr6Params.token2Addr,
-      plmr6Params.token2Rate,
-      plmr6Params.token2DecimalShift,
-      { value: deploymentFee },
-    );
-
-    deploymentFee = await registry.getDeploymentFee(
-      plmr7Params.token1Addr,
-      plmr7Params.token2Addr,
-    );
-
-    await registry.connect(bob).createNewPLMR(
-      plmr7Params.token1Addr,
-      plmr7Params.token1Rate,
-      plmr7Params.token1DecimalShift,
-      plmr7Params.token2Addr,
-      plmr7Params.token2Rate,
-      plmr7Params.token2DecimalShift,
+    await graphStore.connect(bob).createNewAGPH(
+      agph6Params.token1Addr,
+      agph6Params.token1Rate,
+      agph6Params.token1DecimalShift,
+      agph6Params.token2Addr,
+      agph6Params.token2Rate,
+      agph6Params.token2DecimalShift,
       { value: deploymentFee },
     );
 
-    deploymentFee = await registry.getDeploymentFee(
-      plmr8Params.token1Addr,
-      plmr8Params.token2Addr,
+    deploymentFee = await graphStore.getDeploymentFee(
+      agph7Params.token1Addr,
+      agph7Params.token2Addr,
     );
 
-    await registry.connect(bob).createNewPLMR(
-      plmr8Params.token1Addr,
-      plmr8Params.token1Rate,
-      plmr8Params.token1DecimalShift,
-      plmr8Params.token2Addr,
-      plmr8Params.token2Rate,
-      plmr8Params.token2DecimalShift,
+    await graphStore.connect(bob).createNewAGPH(
+      agph7Params.token1Addr,
+      agph7Params.token1Rate,
+      agph7Params.token1DecimalShift,
+      agph7Params.token2Addr,
+      agph7Params.token2Rate,
+      agph7Params.token2DecimalShift,
       { value: deploymentFee },
     );
 
-    const allPLMRS = await registry.getAllPolymers();
-    //now I generate a DAG for PLMR8 with amount 1
+    deploymentFee = await graphStore.getDeploymentFee(
+      agph8Params.token1Addr,
+      agph8Params.token2Addr,
+    );
 
-    const PLMR7dagOption = generateDag(allPLMRS, "PLMR7", "1");
+    await graphStore.connect(bob).createNewAGPH(
+      agph8Params.token1Addr,
+      agph8Params.token1Rate,
+      agph8Params.token1DecimalShift,
+      agph8Params.token2Addr,
+      agph8Params.token2Rate,
+      agph8Params.token2DecimalShift,
+      { value: deploymentFee },
+    );
+
+    const allAGPHS = await graphStore.getAllAGPH();
+    //now I generate a DAG for AGPH8 with amount 1
+
+    const AGPH7dagOption = generateDag(allAGPHS, "AGPH7", "1");
 
     // DAG generation success, now I need to expect and verify it!
-    expect(PLMR7dagOption.result).to.equal(Result.SOME);
-    expect(PLMR7dagOption.data.name).to.equal("PLMR7");
-    expect(PLMR7dagOption.data?.attributes?.Amount).to.equal("1");
-    expect(PLMR7dagOption.data.metadata.rate).to.equal(1);
-    expect(PLMR7dagOption.data.metadata.decimalShift).to.equal(0);
-    expect(PLMR7dagOption.data.metadata.isPlmr).to.equal(true);
-    expect(PLMR7dagOption.data.children?.length).to.equal(2);
-    const plmr7DagChildren = PLMR7dagOption.data.children as Dag[];
-    expect(plmr7DagChildren[0].name).to.equal("PLMR4");
-    expect(plmr7DagChildren[0].children?.length).to.equal(2);
-    expect(plmr7DagChildren[0].metadata.isPlmr).to.equal(true);
+    expect(AGPH7dagOption.result).to.equal(Result.SOME);
+    expect(AGPH7dagOption.data.name).to.equal("AGPH7");
+    expect(AGPH7dagOption.data?.attributes?.Amount).to.equal("1");
+    expect(AGPH7dagOption.data.metadata.rate).to.equal(1);
+    expect(AGPH7dagOption.data.metadata.decimalShift).to.equal(0);
+    expect(AGPH7dagOption.data.metadata.isAgph).to.equal(true);
+    expect(AGPH7dagOption.data.children?.length).to.equal(2);
+    const agph7DagChildren = AGPH7dagOption.data.children as Dag[];
+    expect(agph7DagChildren[0].name).to.equal("AGPH4");
+    expect(agph7DagChildren[0].children?.length).to.equal(2);
+    expect(agph7DagChildren[0].metadata.isAgph).to.equal(true);
     //ETC... I did not check all DAG parameters, they look good!
+
+    console.log(JSON.stringify(AGPH7dagOption.data))
+
   });
 
-  it("Test mint and redeem", async function () {
+  it("Test mint and unwrap", async function () {
     //SETUP START
     const {
       owner,
@@ -614,10 +632,10 @@ describe("Polymer registry", function () {
       ETH,
       alice,
       bob,
-      registry,
+      graphStore,
       requestedTokens,
-      polymerFactory,
-    } = await setUpPLRM();
+      agphFactory,
+    } = await setUpAGPH();
 
     //Setting up available tokens
     await requestedTokens.requestNewToken(
@@ -633,73 +651,73 @@ describe("Polymer registry", function () {
     await requestedTokens.acceptTokenRequest(ETH.address);
     // Requested tokens setup done
 
-    const plmr1Params: RegisterNewPLMRArgs = {
-      ...buildToken1_RegisterPlmrParams(BTC.address, 1, 3), //0.001 BTC
-      ...buildToken2_RegisterPlmrParams(USD.address, 1000, 0), // 1000 USD
+    const agph1Params: RegisterNewAgphArgs = {
+      ...buildToken1_RegisterAgphParams(BTC.address, 1, 3), //0.001 BTC
+      ...buildToken2_RegisterAgphParams(USD.address, 1000, 0), // 1000 USD
     };
 
-    let deploymentFee = await registry.getDeploymentFee(
-      plmr1Params.token1Addr,
-      plmr1Params.token2Addr,
+    let deploymentFee = await graphStore.getDeploymentFee(
+      agph1Params.token1Addr,
+      agph1Params.token2Addr,
     );
 
     // Now I register these now
-    await registry.connect(bob).createNewPLMR(
-      plmr1Params.token1Addr,
-      plmr1Params.token1Rate,
-      plmr1Params.token1DecimalShift,
-      plmr1Params.token2Addr,
-      plmr1Params.token2Rate,
-      plmr1Params.token2DecimalShift,
+    await graphStore.connect(bob).createNewAGPH(
+      agph1Params.token1Addr,
+      agph1Params.token1Rate,
+      agph1Params.token1DecimalShift,
+      agph1Params.token2Addr,
+      agph1Params.token2Rate,
+      agph1Params.token2DecimalShift,
       { value: deploymentFee },
     );
 
-    // Now I combine some PLMR tokens!
-    let plmr1: PLMR = await registry.getPolymerByIndex(0);
+    // Now I combine some AGPH tokens!
+    let agph1: AGPH = await graphStore.getAGPHByIndex(0);
 
     // SETUP ENDS
 
-    const PLMR1_contract = await polymerFactory.attach(plmr1.polymerAddress);
+    const AGPH1_contract = await agphFactory.attach(agph1.agphAddress);
 
-    expect(await PLMR1_contract.symbol()).to.equal("PLMR1");
+    expect(await AGPH1_contract.symbol()).to.equal("AGPH1");
 
-    let PLMR1_mintAmount = parseEther("1");
+    let AGPH1_mintAmount = parseEther("1");
 
-    const PLMR1_token1ToDeposit = await PLMR1_contract.calculateTokenDeposits(
-      PLMR1_mintAmount,
-      plmr1.token1Rate,
-      plmr1.token1DecimalShift,
+    const AGPH1_token1ToDeposit = await AGPH1_contract.calculateTokenDeposits(
+      AGPH1_mintAmount,
+      agph1.token1Rate,
+      agph1.token1DecimalShift,
     );
-    const PLMR1_token2ToDeposit = await PLMR1_contract.calculateTokenDeposits(
-      PLMR1_mintAmount,
-      plmr1.token2Rate,
-      plmr1.token2DecimalShift,
-    );
-
-    const PLMR1_token1DepositFee = await PLMR1_contract.calculateFee(
-      PLMR1_token1ToDeposit,
-      plmr1.token1Addr,
-    );
-    const PLMR1_token2DepositFee = await PLMR1_contract.calculateFee(
-      PLMR1_token2ToDeposit,
-      plmr1.token2Addr,
+    const AGPH1_token2ToDeposit = await AGPH1_contract.calculateTokenDeposits(
+      AGPH1_mintAmount,
+      agph1.token2Rate,
+      agph1.token2DecimalShift,
     );
 
-    expect(BTC.address).to.equal(plmr1.token1Addr);
-    expect(USD.address).to.equal(plmr1.token2Addr);
+    const AGPH1_token1DepositFee = await AGPH1_contract.calculateFee(
+      AGPH1_token1ToDeposit,
+      agph1.token1Addr,
+    );
+    const AGPH1_token2DepositFee = await AGPH1_contract.calculateFee(
+      AGPH1_token2ToDeposit,
+      agph1.token2Addr,
+    );
+
+    expect(BTC.address).to.equal(agph1.token1Addr);
+    expect(USD.address).to.equal(agph1.token2Addr);
 
     await BTC.transfer(
       alice.address,
-      PLMR1_token1ToDeposit.add(PLMR1_token1DepositFee),
+      AGPH1_token1ToDeposit.add(AGPH1_token1DepositFee),
     );
 
     await USD.transfer(
       alice.address,
-      PLMR1_token2ToDeposit.add(PLMR1_token2DepositFee),
+      AGPH1_token2ToDeposit.add(AGPH1_token2DepositFee),
     );
 
     expect(await BTC.balanceOf(alice.address)).to.equal(
-      PLMR1_token1ToDeposit.add(PLMR1_token1DepositFee),
+      AGPH1_token1ToDeposit.add(AGPH1_token1DepositFee),
     );
 
     expect(
@@ -707,32 +725,32 @@ describe("Polymer registry", function () {
         alice.address,
       ),
     ).to.equal(
-      PLMR1_token2ToDeposit.add(PLMR1_token2DepositFee),
+      AGPH1_token2ToDeposit.add(AGPH1_token2DepositFee),
     );
 
     // Now I need to approve spending these! Deposit + fee
     await BTC.connect(alice).approve(
-      PLMR1_contract.address,
-      PLMR1_token1ToDeposit.add(PLMR1_token1DepositFee),
+      AGPH1_contract.address,
+      AGPH1_token1ToDeposit.add(AGPH1_token1DepositFee),
     );
     await USD.connect(alice).approve(
-      PLMR1_contract.address,
-      PLMR1_token2ToDeposit.add(PLMR1_token2DepositFee),
+      AGPH1_contract.address,
+      AGPH1_token2ToDeposit.add(AGPH1_token2DepositFee),
     );
 
     // Now I am ready to mint! There are no tokens so far...
-    expect(await PLMR1_contract.totalSupply()).to.equal(0);
+    expect(await AGPH1_contract.totalSupply()).to.equal(0);
 
     // Minting now!
 
-    await PLMR1_contract.connect(alice).mintPLMR(PLMR1_mintAmount);
+    await AGPH1_contract.connect(alice).wrapAGPH(AGPH1_mintAmount);
     // The owner got the tokens minted
-    expect(await PLMR1_contract.balanceOf(alice.address)).to.equal(
-      PLMR1_mintAmount,
+    expect(await AGPH1_contract.balanceOf(alice.address)).to.equal(
+      AGPH1_mintAmount,
     );
-    expect(await PLMR1_contract.totalSupply()).to.equal(parseEther("1"));
+    expect(await AGPH1_contract.totalSupply()).to.equal(parseEther("1"));
 
-    expect(await PLMR1_contract.balanceOf(alice.address)).to.equal(
+    expect(await AGPH1_contract.balanceOf(alice.address)).to.equal(
       parseEther("1"),
     );
 
@@ -748,25 +766,25 @@ describe("Polymer registry", function () {
       parseEther("0"),
     );
 
-    await PLMR1_contract.connect(alice).transfer(bob.address, parseEther("1"));
-    expect(await PLMR1_contract.balanceOf(alice.address)).to.equal(
+    await AGPH1_contract.connect(alice).transfer(bob.address, parseEther("1"));
+    expect(await AGPH1_contract.balanceOf(alice.address)).to.equal(
       parseEther("0"),
     );
-    expect(await PLMR1_contract.balanceOf(bob.address)).to.equal(
+    expect(await AGPH1_contract.balanceOf(bob.address)).to.equal(
       parseEther("1"),
     );
 
-    //NOW REDEEM IT!
+    //NOW UNWRAP IT!
 
     expect(await BTC.balanceOf(bob.address)).to.equal(parseEther("0"));
     expect(await USD.balanceOf(bob.address)).to.equal(parseEther("0"));
 
-    await PLMR1_contract.connect(bob).redeemPLMR(parseEther("1"));
+    await AGPH1_contract.connect(bob).unwrapAGPH(parseEther("1"));
 
-    expect(await BTC.balanceOf(bob.address)).to.equal(PLMR1_token1ToDeposit);
-    expect(await USD.balanceOf(bob.address)).to.equal(PLMR1_token2ToDeposit);
+    expect(await BTC.balanceOf(bob.address)).to.equal(AGPH1_token1ToDeposit);
+    expect(await USD.balanceOf(bob.address)).to.equal(AGPH1_token2ToDeposit);
 
-    // And Bob redeemed it now and all tokens are burned!!
-    expect(await PLMR1_contract.totalSupply()).to.equal(parseEther("0"));
+    // And Bob unwrapped it now and all tokens are burned!!
+    expect(await AGPH1_contract.totalSupply()).to.equal(parseEther("0"));
   });
 });
