@@ -64,7 +64,7 @@ contract AGPH is
             verifier.checkFactoryBytecode(msg.sender),
             "Only GraphStore can initialize"
         );
-        // The name and the symbols are the same for PLMR tokens
+        
         _name = name_[0];
         _symbol = name_[1];
         _token1Addr = tokenAddr_[0];

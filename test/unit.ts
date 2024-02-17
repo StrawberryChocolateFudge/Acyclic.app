@@ -2,7 +2,7 @@ import { expect } from "chai";
 import {
   calculateTokenDeposit,
   convertDecimalNumberStringToRateAndDecimalShift,
-  PLMR,
+  AGPH,
 } from "../lib/traverseDAG";
 
 describe("Unit tests for various function on the client side", function () {
@@ -24,12 +24,11 @@ describe("Unit tests for various function on the client side", function () {
   });
 
   it("Test calculating token deposit amount using rate and decimal shift", function () {
-    //TODO: Compare this also to the deployed contract in the other file!
-    let plmrTokenAmount = "1";
+    let agphTokenAmount = "1";
     let rate = 124;
     let decimalShift = 3;
 
-    expect(calculateTokenDeposit(plmrTokenAmount, rate, decimalShift)).to.equal(
+    expect(calculateTokenDeposit(agphTokenAmount, rate, decimalShift)).to.equal(
       "0.124",
     );
 

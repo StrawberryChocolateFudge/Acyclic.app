@@ -76,7 +76,7 @@ export type RegisterNewAgphToken2 = {
 
 export type RegisterNewAgphArgs = RegisterNewAgphToken1 & RegisterNewAgphToken2;
 
-// Takes the symbol of a ERC-20 token and checks if it's a PLMR token
+// Takes the symbol of a ERC-20 token and checks if it's a AGPH token
 // The schema is <AGPH><INDEX> which is a number
 // If Option.result is SOME, then it's a valid AGPH contract and returns the index
 // Else if Option.result NONE then it's not a valid AGPH contract and returns an error message and zero.
@@ -110,7 +110,7 @@ export function getAGPHIndex(symbl: string): Option<number> {
   };
 }
 
-// The polymer array index is the naming index -1
+// The AGPH array index is the naming index -1
 export function getAGPHArrayIndex(index: number) {
   return index - 1;
 }
@@ -126,11 +126,11 @@ export function generateDag(
   const agphOptions = getAGPHIndex(symbol);
 
   if (isNone(agphOptions)) {
-    //The name is not a plmr token and I can't start making a Dag
+    //The name is not a agph token and I can't start making a Dag
     return {
       result: Result.NONE,
       data: {} as Dag,
-      error: "Top level node not PLMR",
+      error: "Top level node not AGPH",
     };
   }
 
@@ -174,7 +174,7 @@ function findChildren(
   // Decode the index from the symbol
   const options = getAGPHIndex(symbol);
 
-  // Find the array index of the PLMR token to parse
+  // Find the array index of the AGPH token to parse
   const index = getAGPHArrayIndex(options.data);
   // Take it from the list
   const element = agphList[index];

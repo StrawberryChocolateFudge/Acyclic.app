@@ -52,7 +52,7 @@ Tokens created with acyclic.app will never be registered securities and should n
 **Cryptocurrency is high risk.** There is zero insurance that the underlying assets continue to trade for value and the derived tokens reflect only the underlying price.
 There is zero insurance that AGPH tokens backed by assets can be traded anywhere. We don't provide a liquid market.
 
-While having a diverse portfolio could protect you, polymer.money does not offer an insurance of any kind. 
+While having a diverse portfolio could protect investments, acyclic.app does not offer an investmen protection or insurance of any kind. 
 
 The creators of the protocol are idemnified of any liabilities for losses that may occur while trading or holding crypto currencies.
 

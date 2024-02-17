@@ -66,7 +66,7 @@ contract GraphStore is Ownable, CloneFactory {
     // This is used for spam protection, createNewAGPH can be called by anyone, but creating more AGPH token contracts with the same pair that is already wrapped will get progressively more expensive!
     mapping(bytes32 => uint256) private deploymentCounter;
     // The base fee for a new AGPH contract deployment is 0.05 ether. The base fee is multiplied with the deploymentCounter. The first deployment is always free.
-    uint256 private constant PLMRDeploymentBaseFee = 0.05 ether;
+    uint256 private constant AGPHDeploymentBaseFee = 0.05 ether;
 
     /**
    @dev The constructor is invoked when deploying the contract
@@ -185,13 +185,13 @@ contract GraphStore is Ownable, CloneFactory {
         address token1Addr,
         address token2Addr
     ) internal view {
-        // If the address is not a PLMR address
+        // If the address is not a AGPH address
         if (!isAGPHAddress[token1Addr]) {
             // Only allow creating token pairs that were reviewed
             if (requestedTokens.getStatus(token1Addr) != TokenStatus.ACCEPTED)
                 revert OnlyAcceptedToken();
         }
-        // If the address 2 is not a PLMR address
+        // If the address 2 is not a AGPH address
         if (!isAGPHAddress[token2Addr]) {
             // Only allow creating token pairs that were reviewed
             if (requestedTokens.getStatus(token2Addr) != TokenStatus.ACCEPTED)
@@ -303,7 +303,7 @@ contract GraphStore is Ownable, CloneFactory {
     ) public view returns (uint256) {
         return
             deploymentCounter[tokenAddressHasher(token1Addr, token2Addr)].mul(
-                PLMRDeploymentBaseFee
+                AGPHDeploymentBaseFee
             );
     }
 }
