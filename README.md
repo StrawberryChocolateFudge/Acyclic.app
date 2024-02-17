@@ -17,7 +17,24 @@ The application was inspired by chemistry, I was looking at polymer chains and w
 
 The created derivatives can be combined with each other to create further combinations which is structured as a **directed acyclic graph**.
 
-A single token can hold many other and can give you safer exposure to risky assets with less volatility. 
+A simple DAG could be visualised as:
+
+```               
+                  BTC
+                 /
+                /
+PLMR2-PLMR1/BTC                  ETH
+                \                /
+                 \              /
+                  PLMR1-ETH/USDC
+                                \
+                                 \
+                                  USDC
+
+```
+The following DAG is an example. It's an ERC-20 token with a symbol PLMR2, and it's value is derived from BTC,ETH and USDC. it can be redeemed for BTC and PLMR1, which can be redeemed for ETH and USDC
+
+A single token can hold many other and can give you exposure to more assets by holding a single token.
 
 ---
 
@@ -61,7 +78,12 @@ The fees are a small added cost, during deposit only, the redemptions will alway
 For example: To mint a PLMR token with 0.001 ETH and 100USDC backing, with a deposit fee of 0.2% on each asset, the user must approve and deposit 0.001002 ETH and 100.02 USDC to mint 1 token. 
 When redeeming this, the user will burn 1 token and recieve exactly 0.001 ETH and 100USDC as there are no redemption fees at all.
 
-**The real value of the PLMR token will always match 100% the underlying deposits.**
+#### **There are Fees for spam protection when deploying new PLMR tokens**
+When interacting with the registry to create a new token, there is a deployment fee. This is used to disincentivise spam attacks.
+The function call that creates a new PLMR token contract is public and can be called by anyone, so an attacker might spam the contract and create large amount of tokens as a form of DOS attack. This is solved with a deployment fee.
+The contract maintains and increments an internal deployment counter and will multiply it with a base fee. This fee is required to be deposited, else the deployment fails. This allows users to create new derivatives for a cost but will mitigate a DOS Spam attack.
+
+### **The real value of the PLMR token will always match 100% the underlying deposits.**
 
 However, large combinations of tokens could be harder to track for price and they may depeg on Dexes. This leads to interesting arbitrage opportunities.
 
@@ -138,21 +160,9 @@ Each PLMR token is an element in DAG which are stored in the registry in a list.
 
 The list provides a simple `getAllPolymers()` and `getPolymerByIndex(uint256)` function to access the DAG or an element in it by index. to fetch and recompute the DAG to explore it on the front end.
 
-A simple DAG could be visualised as:
 
-```               
-                  BTC
-                 /
-                /
-PLMR2-PLMR1/BTC                  ETH
-                \                /
-                 \              /
-                  PLMR1-ETH/USDC
-                                \
-                                 \
-                                  USDC
-
-```
-The following DAG contains BTC,ETH and USDC
 
 ...TODO COmputing the DAG
+
+
+### TODO: DEPLOY FRONT END VIA GITHUB PAGES
