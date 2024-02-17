@@ -31,7 +31,9 @@ contract RequestedTokens is Ownable,IRequestedTokens {
 
     event NewTokenAccepted(address indexed token);
 
-    function requestNewToken(address _token) external {
+
+    
+    function requestNewToken(address _token) external onlyOwner {
         require(status[_token] == TokenStatus.EMPTY, "Request already exists!");
         status[_token] = TokenStatus.PENDING;
         alltokens.push(_token);

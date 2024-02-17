@@ -25,13 +25,13 @@ describe("Polymer registry", function () {
 
     expect(await requestedTokens.getStatus(BTC.address)).to.equal(0);
     // Request a new token
-    await requestedTokens.connect(bob).requestNewToken(
+    await requestedTokens.requestNewToken(
       BTC.address,
     );
     expect(await requestedTokens.getStatus(BTC.address)).to.equal(1);
 
     // Now request another token
-    await requestedTokens.connect(bob).requestNewToken(USD.address);
+    await requestedTokens.requestNewToken(USD.address);
 
     let alltokens = await requestedTokens.getAllTokens();
 
@@ -106,7 +106,7 @@ describe("Polymer registry", function () {
     errorMessage = "";
 
     try {
-      await requestedTokens.connect(bob).requestNewToken(USD.address);
+      await requestedTokens.requestNewToken(USD.address);
     } catch (err: any) {
       errorOccured = true;
       errorMessage = err.message;
@@ -116,7 +116,7 @@ describe("Polymer registry", function () {
     expect(errorMessage.includes("Request already exists!")).to.be.true;
 
     // I create another request with a new token now...
-    await requestedTokens.connect(bob).requestNewToken(EUR.address);
+    await requestedTokens.requestNewToken(EUR.address);
 
     // Try Transfer ownership for requestedTokens with bob
     errorOccured = false;
@@ -177,10 +177,10 @@ describe("Polymer registry", function () {
       polymerFactory,
     } = await setUpPLRM();
 
-    await requestedTokens.connect(bob).requestNewToken(
+    await requestedTokens.requestNewToken(
       BTC.address,
     );
-    await requestedTokens.connect(bob).requestNewToken(USD.address);
+    await requestedTokens.requestNewToken(USD.address);
 
     await requestedTokens.acceptTokenRequest(BTC.address);
     await requestedTokens.acceptTokenRequest(USD.address);
@@ -305,10 +305,10 @@ describe("Polymer registry", function () {
       polymerFactory,
     } = await setUpPLRM();
 
-    await requestedTokens.connect(bob).requestNewToken(
+    await requestedTokens.requestNewToken(
       BTC.address,
     );
-    await requestedTokens.connect(bob).requestNewToken(USD.address);
+    await requestedTokens.requestNewToken(USD.address);
 
     await requestedTokens.acceptTokenRequest(BTC.address);
     await requestedTokens.acceptTokenRequest(USD.address);
@@ -408,12 +408,12 @@ describe("Polymer registry", function () {
     // I want to generate a massive DAG for testing with multiple children, BTC,USD, EUR, ETH, all that will go in.
 
     //Setting up available tokens
-    await requestedTokens.connect(bob).requestNewToken(
+    await requestedTokens.requestNewToken(
       BTC.address,
     );
-    await requestedTokens.connect(bob).requestNewToken(USD.address);
-    await requestedTokens.connect(bob).requestNewToken(EUR.address);
-    await requestedTokens.connect(bob).requestNewToken(ETH.address);
+    await requestedTokens.requestNewToken(USD.address);
+    await requestedTokens.requestNewToken(EUR.address);
+    await requestedTokens.requestNewToken(ETH.address);
 
     await requestedTokens.acceptTokenRequest(BTC.address);
     await requestedTokens.acceptTokenRequest(USD.address);
@@ -620,12 +620,12 @@ describe("Polymer registry", function () {
     } = await setUpPLRM();
 
     //Setting up available tokens
-    await requestedTokens.connect(bob).requestNewToken(
+    await requestedTokens.requestNewToken(
       BTC.address,
     );
-    await requestedTokens.connect(bob).requestNewToken(USD.address);
-    await requestedTokens.connect(bob).requestNewToken(EUR.address);
-    await requestedTokens.connect(bob).requestNewToken(ETH.address);
+    await requestedTokens.requestNewToken(USD.address);
+    await requestedTokens.requestNewToken(EUR.address);
+    await requestedTokens.requestNewToken(ETH.address);
 
     await requestedTokens.acceptTokenRequest(BTC.address);
     await requestedTokens.acceptTokenRequest(USD.address);
