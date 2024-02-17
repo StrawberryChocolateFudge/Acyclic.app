@@ -67,11 +67,11 @@ contract PolymerRegistry is Ownable, CloneFactory {
     // Emit a NewPLMR event. The front end will listen to this event to navigate to the next page.
     event NewPLMR(PLMR);
 
-    // A mapping to store how many times a token address was deployed with a PLMR token.
-    // This is used for the SPAM protection, creating more PLMR token contracts with a token, that is already wrapped will get progressively more expensive! This is used to disincentivise spam attacks.
-    mapping(address => uint256) private deploymentCounter;
+    // A mapping to store how many times a token pair was deployed as a PLMR token.
+    // This is used for the SPAM protection, creating more PLMR token contracts with a pair that is already wrapped will get progressively more expensive! This is used to disincentivise spam attacks.
+    mapping(bytes32 => uint256) private deploymentCounter;
     // The base fee for a new PLMR contract deployment is 0.05 ether. The base fee is multiplied with the deploymentCounter. The first deployment is always free.
-    uint256 constant PLMRDeploymentBaseFee = 0.05 ether;
+    uint256 private constant PLMRDeploymentBaseFee = 0.05 ether;
 
     /**
    @dev The costructor is invoked when deploying the contract
@@ -148,14 +148,11 @@ contract PolymerRegistry is Ownable, CloneFactory {
 
         _validateTokenAddresses(token1Addr, token2Addr);
 
-        uint256 totalDeploymentFee = getDeploymentFee(token1Addr).add(
-            getDeploymentFee(token2Addr)
-        );
+        if (getDeploymentFee(token1Addr, token2Addr) != msg.value)
+            revert NotEnoughDeploymentFee();
 
-        if (totalDeploymentFee != msg.value) revert NotEnoughDeploymentFee();
         _forwardDeploymentFee();
-        _incrementDeploymentCounter(token1Addr);
-        _incrementDeploymentCounter(token2Addr);
+        _incrementDeploymentCounter(token1Addr, token2Addr);
 
         string[2] memory plmrName = _concatTokenName(token1Addr, token2Addr);
 
@@ -215,8 +212,11 @@ contract PolymerRegistry is Ownable, CloneFactory {
     }
 
     // This function modifies state and increments the deployment counter!
-    function _incrementDeploymentCounter(address ofToken) internal {
-        deploymentCounter[ofToken] += 1;
+    function _incrementDeploymentCounter(
+        address token1Addr,
+        address token2Addr
+    ) internal {
+        deploymentCounter[tokenAddressHasher(token1Addr, token2Addr)] += 1;
     }
 
     //Concat the Token name
@@ -291,9 +291,22 @@ contract PolymerRegistry is Ownable, CloneFactory {
         return allpolymers[index];
     }
 
+    function tokenAddressHasher(
+        address token1Addr,
+        address token2Addr
+    ) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(token1Addr, token2Addr));
+    }
+
     // Get the deployment fee of a token by multiplying it with the counter
     // This is public so it's called internally but also by the front end to calculate the fees needed
-    function getDeploymentFee(address ofToken) public view returns (uint256) {
-        return deploymentCounter[ofToken].mul(PLMRDeploymentBaseFee);
+    function getDeploymentFee(
+        address token1Addr,
+        address token2Addr
+    ) public view returns (uint256) {
+        return
+            deploymentCounter[tokenAddressHasher(token1Addr, token2Addr)].mul(
+                PLMRDeploymentBaseFee
+            );
     }
 }

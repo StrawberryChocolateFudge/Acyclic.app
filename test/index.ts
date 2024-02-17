@@ -191,8 +191,7 @@ describe("Polymer registry", function () {
     let token2Rate = 1000;
     let token2DecimalShift = 0;
 
-    let token1DeploymentFee = await registry.getDeploymentFee(token1Addr);
-    let token2DeploymentFee = await registry.getDeploymentFee(token2Addr);
+    let deploymentFee = await registry.getDeploymentFee(token1Addr, token2Addr);
 
     await registry.connect(bob).createNewPLMR(
       token1Addr,
@@ -201,7 +200,7 @@ describe("Polymer registry", function () {
       token2Addr,
       token2Rate,
       token2DecimalShift,
-      { value: token1DeploymentFee.add(token2DeploymentFee) },
+      { value: deploymentFee },
     );
 
     // Expect that the new PLMR exists!
@@ -235,8 +234,7 @@ describe("Polymer registry", function () {
 
     // The PLMR2 token contains 0.001 BTC and 1 PLMR1 (which contains 0.001BTC and 1000USD)
 
-    token1DeploymentFee = await registry.getDeploymentFee(token1Addr);
-    token2DeploymentFee = await registry.getDeploymentFee(token2Addr);
+    deploymentFee = await registry.getDeploymentFee(token1Addr, token2Addr);
 
     await registry.connect(bob).createNewPLMR(
       token1Addr,
@@ -245,7 +243,7 @@ describe("Polymer registry", function () {
       token2Addr,
       token2Rate,
       token2DecimalShift,
-      { value: token1DeploymentFee.add(token2DeploymentFee) },
+      { value: deploymentFee },
     );
     //this succeeds because PLMR1 don't need to be registered
     plmrs = await registry.getAllPolymers();
@@ -320,8 +318,7 @@ describe("Polymer registry", function () {
     let token2Addr = USD.address;
     let token2Rate = 1000;
     let token2DecimalShift = 0;
-    let token1DeploymentFee = await registry.getDeploymentFee(token1Addr);
-    let token2DeploymentFee = await registry.getDeploymentFee(token2Addr);
+    let deploymentFee = await registry.getDeploymentFee(token1Addr, token2Addr);
 
     await registry.connect(bob).createNewPLMR(
       token1Addr,
@@ -330,7 +327,7 @@ describe("Polymer registry", function () {
       token2Addr,
       token2Rate,
       token2DecimalShift,
-      { value: token1DeploymentFee.add(token2DeploymentFee) },
+      { value: deploymentFee },
     );
     let plmrs = await registry.getAllPolymers();
     expect(plmrs.length).to.equal(1);
@@ -443,10 +440,8 @@ describe("Polymer registry", function () {
       ...buildToken2_RegisterPlmrParams(ETH.address, 1, 0), // 1 ETH
     };
 
-    let token1DeploymentFee = await registry.getDeploymentFee(
+    let deploymentFee = await registry.getDeploymentFee(
       plmr1Params.token1Addr,
-    );
-    let token2DeploymentFee = await registry.getDeploymentFee(
       plmr1Params.token2Addr,
     );
 
@@ -458,12 +453,10 @@ describe("Polymer registry", function () {
       plmr1Params.token2Addr,
       plmr1Params.token2Rate,
       plmr1Params.token2DecimalShift,
-      { value: token1DeploymentFee.add(token2DeploymentFee) },
+      { value: deploymentFee },
     );
-    token1DeploymentFee = await registry.getDeploymentFee(
+    deploymentFee = await registry.getDeploymentFee(
       plmr2Params.token1Addr,
-    );
-    token2DeploymentFee = await registry.getDeploymentFee(
       plmr2Params.token2Addr,
     );
 
@@ -474,12 +467,10 @@ describe("Polymer registry", function () {
       plmr2Params.token2Addr,
       plmr2Params.token2Rate,
       plmr2Params.token2DecimalShift,
-      { value: token1DeploymentFee.add(token2DeploymentFee) },
+      { value: deploymentFee },
     );
-    token1DeploymentFee = await registry.getDeploymentFee(
+    deploymentFee = await registry.getDeploymentFee(
       plmr3Params.token1Addr,
-    );
-    token2DeploymentFee = await registry.getDeploymentFee(
       plmr3Params.token2Addr,
     );
 
@@ -490,12 +481,10 @@ describe("Polymer registry", function () {
       plmr3Params.token2Addr,
       plmr3Params.token2Rate,
       plmr3Params.token2DecimalShift,
-      { value: token1DeploymentFee.add(token2DeploymentFee) },
+      { value: deploymentFee },
     );
-    token1DeploymentFee = await registry.getDeploymentFee(
+    deploymentFee = await registry.getDeploymentFee(
       plmr4Params.token1Addr,
-    );
-    token2DeploymentFee = await registry.getDeploymentFee(
       plmr4Params.token2Addr,
     );
 
@@ -506,7 +495,7 @@ describe("Polymer registry", function () {
       plmr4Params.token2Addr,
       plmr4Params.token2Rate,
       plmr4Params.token2DecimalShift,
-      { value: token1DeploymentFee.add(token2DeploymentFee) },
+      { value: deploymentFee },
     );
 
     // Now I combine some PLMR tokens!
@@ -535,10 +524,8 @@ describe("Polymer registry", function () {
       ...buildToken2_RegisterPlmrParams(USD.address, 1000, 0), // 1000 USD
     };
 
-    token1DeploymentFee = await registry.getDeploymentFee(
+    deploymentFee = await registry.getDeploymentFee(
       plmr5Params.token1Addr,
-    );
-    token2DeploymentFee = await registry.getDeploymentFee(
       plmr5Params.token2Addr,
     );
 
@@ -549,13 +536,10 @@ describe("Polymer registry", function () {
       plmr5Params.token2Addr,
       plmr5Params.token2Rate,
       plmr5Params.token2DecimalShift,
-      { value: token1DeploymentFee.add(token2DeploymentFee) },
+      { value: deploymentFee },
     );
-
-    token1DeploymentFee = await registry.getDeploymentFee(
+    deploymentFee = await registry.getDeploymentFee(
       plmr6Params.token1Addr,
-    );
-    token2DeploymentFee = await registry.getDeploymentFee(
       plmr6Params.token2Addr,
     );
 
@@ -566,13 +550,11 @@ describe("Polymer registry", function () {
       plmr6Params.token2Addr,
       plmr6Params.token2Rate,
       plmr6Params.token2DecimalShift,
-      { value: token1DeploymentFee.add(token2DeploymentFee) },
+      { value: deploymentFee },
     );
 
-    token1DeploymentFee = await registry.getDeploymentFee(
+    deploymentFee = await registry.getDeploymentFee(
       plmr7Params.token1Addr,
-    );
-    token2DeploymentFee = await registry.getDeploymentFee(
       plmr7Params.token2Addr,
     );
 
@@ -583,13 +565,11 @@ describe("Polymer registry", function () {
       plmr7Params.token2Addr,
       plmr7Params.token2Rate,
       plmr7Params.token2DecimalShift,
-      { value: token1DeploymentFee.add(token2DeploymentFee) },
+      { value: deploymentFee },
     );
 
-    token1DeploymentFee = await registry.getDeploymentFee(
+    deploymentFee = await registry.getDeploymentFee(
       plmr8Params.token1Addr,
-    );
-    token2DeploymentFee = await registry.getDeploymentFee(
       plmr8Params.token2Addr,
     );
 
@@ -600,7 +580,7 @@ describe("Polymer registry", function () {
       plmr8Params.token2Addr,
       plmr8Params.token2Rate,
       plmr8Params.token2DecimalShift,
-      { value: token1DeploymentFee.add(token2DeploymentFee) },
+      { value: deploymentFee },
     );
 
     const allPLMRS = await registry.getAllPolymers();

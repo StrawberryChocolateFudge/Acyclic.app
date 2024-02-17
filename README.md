@@ -79,8 +79,9 @@ For example: To mint a PLMR token with 0.001 ETH and 100USDC backing, with a dep
 When redeeming this, the user will burn 1 token and recieve exactly 0.001 ETH and 100USDC as there are no redemption fees at all.
 
 #### **There are Fees for spam protection when deploying new PLMR tokens**
-When interacting with the registry to create a new token, there is a deployment fee. This is used to disincentivise spam attacks.
+When interacting with the registry to bind a new token pair, there is a deployment fee. This is used to disincentivise spam attacks.
 The function call that creates a new PLMR token contract is public and can be called by anyone, so an attacker might spam the contract and create large amount of tokens as a form of DOS attack. This is solved with a deployment fee.
+
 The contract maintains and increments an internal deployment counter and will multiply it with a base fee. This fee is required to be deposited, else the deployment fails. This allows users to create new derivatives for a cost but will mitigate a DOS Spam attack.
 
 ### **The real value of the PLMR token will always match 100% the underlying deposits.**
