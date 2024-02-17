@@ -179,6 +179,18 @@ function findChildren(
   // Take it from the list
   const element = plmrList[index];
   //Return the child nodes and calculate deposit for token1 and token2
+
+  const token1DepositAmount = calculateTokenDeposit(
+          assetAmount,
+          element.token1Rate,
+          element.token1DecimalShift,
+        );
+  const token2DepositAmount = calculateTokenDeposit(
+          assetAmount,
+          element.token2Rate,
+          element.token2DecimalShift,
+        );
+
   return [
     {
       name: element.token1Symbol,
@@ -194,7 +206,7 @@ function findChildren(
         plmrList,
         element.token1Symbol,
         element.token1IsPlmr,
-        assetAmount,
+        token1DepositAmount,
       ),
       metadata: getToken1Metadata(element),
     },
@@ -211,7 +223,7 @@ function findChildren(
         plmrList,
         element.token2Symbol,
         element.token2IsPlmr,
-        assetAmount,
+        token2DepositAmount,
       ),
       metadata: getToken2Metadata(element),
     },
