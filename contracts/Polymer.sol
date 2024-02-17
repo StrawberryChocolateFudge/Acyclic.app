@@ -154,7 +154,7 @@ contract Polymer is
 
         // Transfer the tokens here, we need to transfer the tokens with the fee to address(this) contract
         _moveTokens(sender, _token1Addr, token1Deposit.add(token1Fee));
-        _moveTokens(sender, _token1Addr, token2Deposit.add(token2Fee));
+        _moveTokens(sender, _token2Addr, token2Deposit.add(token2Fee));
 
         // Forward the fee from this contract to the feeReciever
         _forwardFee(_token1Addr, token1Fee);
