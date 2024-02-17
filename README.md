@@ -20,21 +20,22 @@ The created derivatives can be combined with each other to create further combin
 A simple DAG could be visualised as:
 
 ```               
-                  BTC
+                 0.01 BTC
+                  /
                  /
-                /
-PLMR2-PLMR1/BTC                  ETH
-                \                /
-                 \              /
-                  PLMR1-ETH/USDC
-                                \
+1 PLMR2-PLMR1/BTC                  1 ETH
+                 \                 /
+                  \               /
+                   1 PLMR1-ETH/USDC
                                  \
-                                  USDC
+                                  \
+                                1000 USDC
 
 ```
-The following DAG is an example. It's an ERC-20 token with a symbol PLMR2, and it's value is derived from BTC,ETH and USDC. it can be redeemed for BTC and PLMR1, which can be redeemed for ETH and USDC
+The following DAG is an example. It's an ERC-20 token with a symbol PLMR2, and it's value is derived from BTC,ETH and USDC deposits. In this example, 1 PLMR2 can be redeemed for 0.01 BTC and 1 PLMR1, which can be redeemed for 1 ETH and 1000 USDC
 
 A single token can hold many other and can give you exposure to more assets by holding a single token.
+Think of PLMR tokens as bindings that connect tokens together. You can bind many of them together.
 
 ---
 
@@ -88,7 +89,9 @@ The contract maintains and increments an internal deployment counter and will mu
 
 However, large combinations of tokens could be harder to track for price and they may depeg on Dexes. This leads to interesting arbitrage opportunities.
 
-### Ways for profitting on price differences:
+---
+
+## Ways for profitting on price differences:
 1. If the price of the PLMR tokens is **less** then the deposited assets on a DEX, that incentivises traders to purchase and redeem them to sell the underlying assets for profit.
 
 2. If the price of the PLMR tokens is **more** than the deposited assets, that incentivises traders to purchase the underlying assets and mint new PLMR tokens to sell for profit!
