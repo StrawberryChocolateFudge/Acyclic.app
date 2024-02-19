@@ -30,8 +30,8 @@ const config: HardhatUserConfig = {
     ]
   },
   networks: {
-    ropsten: {
-      url: process.env.ROPSTEN_URL || "",
+    sepolina: {
+      url: process.env.ARBITRUM_SEPOLINA_URL || "",
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },
