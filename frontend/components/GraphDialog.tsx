@@ -4,6 +4,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import Typography from '@mui/material/Typography';
 import Tree from 'react-d3-tree';
+import { DialogActions, Stack, TextField } from '@mui/material';
 
 // This is a simplified example of an org chart with a depth of 2.
 // Note how deeper levels are defined recursively via the `children` property.
@@ -52,6 +53,7 @@ export interface SimpleDialogProps {
 }
 
 function SimpleDialog(props: SimpleDialogProps) {
+    //TODO: I might need some local state when I pass the graph here I need to be able to regenerate it per amount added etc...
     const { onClose, open } = props;
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -61,11 +63,27 @@ function SimpleDialog(props: SimpleDialogProps) {
 
     return (
         <Dialog fullScreen sx={{ width: "100%", height: "100%" }} onClose={handleClose} open={open}>
-            <DialogTitle>Directed Acyclic Graph </DialogTitle>
-            <div id="treeWrapper" style={{ width: "100%", height: "100%" }}>
+            <DialogTitle>Directed Acyclic Graph</DialogTitle>
+            <Stack
+                gap={2}
+                direction={"row"}
+                sx={{
+                    marginLeft: "10px"
+                }}
+            >
+                <TextField label="Asset amount" defaultValue={1}></TextField>
+                <Button size="small" variant="contained">
+                    Refresh graph
+                </Button>
+
+            </Stack>
+            <Button onClick={handleClose} variant="outlined" sx={{ width: "200px", marginLeft: "10px", marginTop: "10px" }}>
+                Close
+            </Button>
+            <div id="treeWrapper" style={{ width: "100%", height: "100%",margin: "0 auto" }}>
                 <Tree data={orgChart} translate={{ x: width / 4, y: height / 3 }} />
             </div>
-            <Button onClick={handleClose}>Close</Button>
+
         </Dialog>
     );
 }
@@ -88,7 +106,7 @@ export default function GraphDialog(props: GraphDialogProps) {
             </Typography>
             <br />
             <Button variant="outlined" onClick={handleClickOpen}>
-                Inspect
+                Inspect DAG
             </Button>
             <SimpleDialog
                 open={open}
