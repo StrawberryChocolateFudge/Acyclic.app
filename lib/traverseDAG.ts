@@ -20,7 +20,7 @@ export function isNone(opts: Option<any>): boolean {
   return opts.result === Result.NONE;
 }
 
-export type AGPH = {
+export type AGPHStruct = {
   agphName: string;
   agphSymbol: string;
   agphAddress: string;
@@ -119,7 +119,7 @@ export function getAGPHArrayIndex(index: number) {
 // The symbol is the symbol of the top level AGPH token
 // Asset amount will let me control the calculations of how much value is in the token, it should default to 1 on the front end, then it's adjustable
 export function generateDag(
-  agphList: AGPH[],
+  agphList: AGPHStruct[],
   symbol: string,
   assetAmount: string,
 ): Option<Dag> {
@@ -161,7 +161,7 @@ export function generateDag(
 
 // Find the child nodes in the Dag, this function is recursive until it finds the nodes that are not AGPH nodes
 function findChildren(
-  agphList: AGPH[],
+  agphList: AGPHStruct[],
   symbol: string,
   isAGPhNode: boolean,
   assetAmount: string,
@@ -281,7 +281,7 @@ export function convertDecimalNumberStringToRateAndDecimalShift(
   }
 }
 
-function getTopLevelNodeMetadata(from: AGPH): TokenMetadata {
+function getTopLevelNodeMetadata(from: AGPHStruct): TokenMetadata {
   return {
     address: from.agphAddress,
     symbol: from.agphSymbol,
@@ -291,7 +291,7 @@ function getTopLevelNodeMetadata(from: AGPH): TokenMetadata {
   };
 }
 
-function getToken1Metadata(from: AGPH): TokenMetadata {
+function getToken1Metadata(from: AGPHStruct): TokenMetadata {
   return {
     address: from.token1Addr,
     symbol: from.token1Symbol,
@@ -301,7 +301,7 @@ function getToken1Metadata(from: AGPH): TokenMetadata {
   };
 }
 
-function getToken2Metadata(from: AGPH): TokenMetadata {
+function getToken2Metadata(from: AGPHStruct): TokenMetadata {
   return {
     address: from.token2Addr,
     symbol: from.token2Symbol,

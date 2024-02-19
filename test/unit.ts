@@ -2,7 +2,7 @@ import { expect } from "chai";
 import {
   calculateTokenDeposit,
   convertDecimalNumberStringToRateAndDecimalShift,
-  AGPH,
+  AGPHStruct,
 } from "../lib/traverseDAG";
 
 describe("Unit tests for various function on the client side", function () {

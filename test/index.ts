@@ -3,7 +3,7 @@ import { formatEther, parseEther } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { setUpAGPH } from "./setUp";
 import {
-  AGPH,
+  AGPHStruct,
   buildToken1_RegisterAgphParams,
   buildToken2_RegisterAgphParams,
   calculateDepositFeeForToken,
@@ -16,7 +16,7 @@ import {
   RegisterNewAgphArgs,
   Result,
 } from "../lib/traverseDAG";
-import { BigNumber } from "ethers/lib/ethers";
+import { BigNumber, ContractTransaction } from "ethers/lib/ethers";
 
 describe("graphStore", function () {
   it("Should test token requests and graphStore", async function () {
@@ -589,7 +589,7 @@ describe("graphStore", function () {
       agph8Params.token2Addr,
     );
 
-    await graphStore.connect(bob).createNewAGPH(
+    const tx: ContractTransaction = await graphStore.connect(bob).createNewAGPH(
       agph8Params.token1Addr,
       agph8Params.token1Rate,
       agph8Params.token1DecimalShift,
@@ -598,6 +598,32 @@ describe("graphStore", function () {
       agph8Params.token2DecimalShift,
       { value: deploymentFee },
     );
+
+    await tx.wait().then(async (res) => {
+      const filter = graphStore.filters.NewAGPH();
+      const events = await graphStore.queryFilter(filter, res.blockHash);
+      expect(events.length).to.equal(1);
+      const event = events[0];
+      expect(event.event).to.equal("NewAGPH");
+      expect(event.args[0].agphName).to.equal("AGPH8-BTC/USD");
+      const args = event.args[0];
+      //I just leave it here in case I need to log it
+      ({
+        agphName: args.agphName,
+        agphSymbol: args.agphSymbol,
+        agphAddress: args.agphAddress,
+        token1Addr: args.token1Addr,
+        token1Symbol: args.token1Symbol,
+        token1Rate: args.token1Rate.toNumber(),
+        token1DecimalShift: args.token1DecimalShift,
+        token1IsAgph: args.token1IsAgph,
+        token2Addr: args.token2Addr,
+        token2Symbol: args.token2Symbol,
+        token2Rate: args.token2Rate.toNumber(),
+        token2DecimalShift: args.token2DecimalShift,
+        token2IsAgph: args.token2IsAgph,
+      });
+    });
 
     const allAGPHS = await graphStore.getAllAGPH();
     //now I generate a DAG for AGPH8 with amount 1
@@ -618,8 +644,7 @@ describe("graphStore", function () {
     expect(agph7DagChildren[0].metadata.isAgph).to.equal(true);
     //ETC... I did not check all DAG parameters, they look good!
 
-    console.log(JSON.stringify(AGPH7dagOption.data))
-
+    console.log(JSON.stringify(AGPH7dagOption.data));
   });
 
   it("Test mint and unwrap", async function () {
@@ -673,7 +698,7 @@ describe("graphStore", function () {
     );
 
     // Now I combine some AGPH tokens!
-    let agph1: AGPH = await graphStore.getAGPHByIndex(0);
+    let agph1: AGPHStruct = await graphStore.getAGPHByIndex(0);
 
     // SETUP ENDS
 
