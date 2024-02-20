@@ -1,6 +1,36 @@
 import { ethers } from "ethers";
 import MetaMaskOnboarding from "@metamask/onboarding";
 
+export const MintOnTestnet = {
+  USD: {
+    amount: "10000",
+    address: "0xA3e7617C85c7Bd6faE230fC3A785005a81d55784",
+    symbol: "USD",
+  },
+  EUR: {
+    amount: "10000",
+    address: "0xe1B20C09736C5ac96d2E1204536b95084915a4Ce",
+    symbol: "EUR",
+  },
+  WToken: {
+    amount: "100",
+    address: "0x64274Fc42aD8e327Eb63E96e1BC7f43952D78D36",
+    symbol: "WToken",
+  },
+  WBTC: {
+    amount: "100",
+    address: "0x1FD17CeAed82819593518AFfB9D289fE5169DCc1",
+    symbol: "WBTC",
+  },
+};
+
+export const TestnetTokenSymbols = {
+  [MintOnTestnet.USD.address]: MintOnTestnet.USD.symbol,
+  [MintOnTestnet.EUR.address]: MintOnTestnet.EUR.symbol,
+  [MintOnTestnet.WToken.address]: MintOnTestnet.WToken.symbol,
+  [MintOnTestnet.WBTC.address]: MintOnTestnet.WBTC.symbol,
+};
+
 enum NetworkNames {
   ARBITRUM_SEPOLINA_TESTNET = "Arbitrum Sepolia Testnet",
 }
@@ -57,8 +87,8 @@ export const AbiPath = {
   ERC20: "/ERC20.json",
   GraphStore: "/GraphStore.json",
   RequestedTokens: "/RequestedTokens.json",
-  TestERC20: "/TestERC20.json"
-}
+  TestERC20: "/TestERC20.json",
+};
 
 // THIS IS THE PROVIDER TO USE WHEN FETCHIGN DATA WITHOUT CONNETCING THE WALLET
 export function getJsonRpcProvider(chainId: string): any {
