@@ -1,6 +1,7 @@
 import { Autocomplete, Box, FormControl, MenuItem, Select, SelectChangeEvent, TextField } from "@mui/material";
 import * as React from "react";
 import { supportedAssetsPlaceHolder, TokenType } from "../../data";
+import TokenIcon from '@mui/icons-material/Token';
 
 export interface SelectState {
     selected: string;
@@ -21,6 +22,17 @@ export function AGPHSelect(props: SelectState) {
     </FormControl>
 }
 
+function GetTokenLogo(props: { logo: string }) {
+    if (props.logo === "") {
+        return <TokenIcon sx={{ marginRight: "5px" }} />
+    } else {
+        return <img
+            loading="lazy"
+            width="20"
+            src={props.logo}
+        />
+    }
+}
 
 export interface TokenSelectorAutocompleteProps {
     tokens: TokenType[];
@@ -44,12 +56,8 @@ export function TokenSelectorAutocomplete(props: TokenSelectorAutocompleteProps)
             }}
             renderInput={(params) => <TextField label="Address" variant="outlined" sx={{ width: "100%", marginTop: "10px" }} {...params} />}
             getOptionLabel={option => option.address}
-            renderOption={(props, option) => (<Box component="li" sx={{ '& > img': { mr: 2, flexShrink: 0 } }} {...props}>
-                <img
-                    loading="lazy"
-                    width="20"
-                    src={option.logo}
-                />
+            renderOption={(props, option) => (<Box component="li" sx={{ '& > img': { flexShrink: 0 } }} {...props}>
+                <GetTokenLogo logo={option.logo}></GetTokenLogo>
                 {option.name} {option.address}
             </Box>)}
         />
