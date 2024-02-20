@@ -53,6 +53,13 @@ export interface Dag {
   children?: Dag[];
   metadata: TokenMetadata;
 }
+
+export type ValueContent = {
+  name: string;
+  address: string;
+  amount: string;
+}[];
+
 // The token metadata exists for both AGPH and external token contracts
 export type TokenMetadata = {
   address: string;
@@ -138,7 +145,7 @@ export function generateDag(
   // I find the element index in the array
   const agphIndex = getAGPHArrayIndex(agphOptions.data);
   const element = agphList[agphIndex];
-
+  const valueContent = {};
   // It returns a Some, with the AGPH
   return {
     result: Result.SOME,
@@ -146,6 +153,7 @@ export function generateDag(
       name: symbol,
       attributes: {
         Amount: assetAmount,
+        Address: element.agphAddress,
       },
       children: findChildren(
         agphList,
@@ -201,6 +209,7 @@ function findChildren(
           element.token1Rate,
           element.token1DecimalShift,
         ),
+        Address: element.token1Addr,
       },
       children: findChildren(
         agphList,
@@ -218,6 +227,7 @@ function findChildren(
           element.token2Rate,
           element.token2DecimalShift,
         ),
+        Address: element.token2Addr,
       },
       children: findChildren(
         agphList,
@@ -228,6 +238,67 @@ function findChildren(
       metadata: getToken2Metadata(element),
     },
   ];
+}
+
+export function aggregateValueContent(
+  dag: Dag | undefined,
+  assetAmount: string,
+) {
+  if (!dag) {
+    return [];
+  }
+
+  const valueContent: { nodes: ValueContent } = getValueContent(
+    dag,
+    assetAmount,
+  );
+  let map = new Map<
+    string,
+    { name: string; address: string; amount: string }
+  >();
+
+  for (let i = 0; i < valueContent.nodes.length; i++) {
+    const node = valueContent.nodes[i];
+    if (map.has(node.address)) {
+      const oldAmount = map.get(node.address)?.amount as string;
+      const newAmount = parseEther(oldAmount).add(parseEther(node.amount));
+      map.set(node.address, { ...node, amount: formatEther(newAmount) });
+    } else {
+      map.set(node.address, node);
+    }
+  }
+
+  return Array.from(map.values());
+}
+
+export function getValueContent(dag: Dag, assetAmount: string) {
+  let valueContent = {
+    nodes: [],
+  };
+  //I can pass valueContent by reference here!! YEAH
+  findValuableChildren(dag, valueContent, assetAmount);
+  return valueContent;
+}
+
+export function findValuableChildren(
+  dag: Dag,
+  valueContent: { nodes: ValueContent },
+  assetAmount: string,
+) {
+  if (!dag.metadata.isAgph) {
+    valueContent.nodes.push({
+      name: dag.metadata.symbol,
+      address: dag.metadata.address,
+      amount: calculateTokenDeposit(
+        assetAmount,
+        dag.metadata.rate,
+        dag.metadata.decimalShift,
+      ),
+    });
+  } else if (dag?.children?.length === 2) {
+    findValuableChildren(dag?.children[0], valueContent, assetAmount);
+    findValuableChildren(dag?.children[1], valueContent, assetAmount);
+  }
 }
 
 //Calculate the token deposits, this function must return the same as the on-chain view function
