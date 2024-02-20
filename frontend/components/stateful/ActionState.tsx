@@ -15,7 +15,7 @@ export interface AGPRActionsProps {
 }
 
 
-export function AGPHActions(props: AGPRActionsProps) {
+export function AGPHActionState(props: AGPRActionsProps) {
 
     const [wrapUnwrapTab, setWrapUnwrapTab] = React.useState(0);
 

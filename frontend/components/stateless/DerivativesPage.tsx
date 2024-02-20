@@ -2,7 +2,7 @@ import { Button, Paper, SelectChangeEvent, Stack, Typography } from "@mui/materi
 import { ArrowForward, } from "@mui/icons-material";
 import * as React from "react";
 import { AGPHSelect } from "../stateless/SelectMenus";
-import { AGPHActions } from "../stateful/ActionUi";
+import { AGPHActionState } from "../stateful/ActionState";
 import { CurrentPage } from "../stateful/Base";
 import { AgphSelectOptions, TokenType } from "../../data";
 import { AGPHStruct } from "../../../lib/traverseDAG";
@@ -38,6 +38,6 @@ export function DerivativesPage(props: DerivativesPageProps) {
             options={props.agphOptions}
             selected={props.selectedAction}
             handleSelect={(event: SelectChangeEvent) => { props.setSelectedAction(event.target.value) }}></AGPHSelect>
-        <AGPHActions agphList={props.agphList} agphTokens={props.agphOptions} valuetokens={props.supportedTokens} selected={props.selectedAction}></AGPHActions>
+        <AGPHActionState agphList={props.agphList} agphTokens={props.agphOptions} valuetokens={props.supportedTokens} selected={props.selectedAction}></AGPHActionState>
     </Paper>;
 }
