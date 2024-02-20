@@ -1,6 +1,10 @@
-import { Button, Divider, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Button, CircularProgress, Divider, Paper, Stack, TextField, Typography } from "@mui/material";
 import * as React from "react";
-import { TokenType } from "../../data";
+import { convertDecimalNumberStringToRateAndDecimalShift } from "../../../lib/traverseDAG";
+import { NETWORK, TokenType } from "../../data";
+import { AbiPath, contractAddresses, getContract, handleNetworkSelect } from "../../web3";
+import { GraphStore_Interactor } from "../../web3/bindings";
+import { Item } from "./Item";
 import { TokenSelectorAutocomplete } from "./SelectMenus";
 
 
@@ -16,16 +20,84 @@ export interface NewPairProps {
     valuetokens: TokenType[];
     agphTokens: TokenType[];
     deploymentCost: string;
+    loadingDeploymentCost: boolean;
+    deployPair: () => Promise<void>;
 }
 
+export function ShowDeploymentCostLoader(props: {
+    message: string,
+    showLoader: boolean
+}) {
+
+    if (props.showLoader) {
+        return <Item>
+            <CircularProgress></CircularProgress>
+        </Item>
+    }
+    return <Item>
+        <Typography sx={{ marginTop: "10px", marginBottom: "10px" }} variant="body1" component="div" >{props.message}</Typography>
+    </Item>
+
+}
+
+function getDeploymentConstMessage(cost: string) {
+    if (cost === "") {
+        return "Recreating existing pairs have incrementing costs."
+    } else {
+        return `Deployment cost: ${cost} ETH`
+    }
+}
+
+
 export function DeployNewPair(props: NewPairProps) {
+
+    function getTokensForSelector(popAddress: string) {
+        const list = props.valuetokens.concat(props.agphTokens);
+        if (popAddress !== "") {
+            const filteredList: TokenType[] = []
+
+            for (let i = 0; i < list.length; i++) {
+                if (list[i].address !== popAddress) {
+                    filteredList.push(list[i]);
+                }
+            }
+            return filteredList;
+        }
+        return list;
+    }
+
+    function isDeployButtonDisabled() {
+        if (
+            props.token1.address !== "" &&
+            props.token2.address !== "" &&
+            !isNaN(parseFloat(props.token1Amount)) &&
+            !isNaN(parseFloat(props.token2Amount)) &&
+            parseFloat(props.token1Amount) !== 0 &&
+            parseFloat(props.token2Amount) !== 0) {
+
+            return false;
+        }
+
+        return true;
+    }
+
+
     return <Stack direction="column" justifyContent="center">
-        <Typography sx={{ margin: "0 auto", paddingBottom: "20px", paddingTop: "20px" }} variant="body1" component="div">You can combine tokens and derive new tokens from them! Create the ultimate portfolio while holding less tokens! <br /> The amount determines how much of the selected asset is wrapped into one new AGPH token.</Typography>
+        <Typography sx={{ margin: "0 auto", paddingBottom: "20px", paddingTop: "20px" }} variant="body1" component="div">
+            You can combine tokens and derive new tokens from them! Create the ultimate portfolio while holding less tokens! <br /> The amount determines how much token needs to be wrapped to create a new token.</Typography>
 
         <Divider />
         <Paper sx={{ padding: "20px" }}>
             <Typography variant="body1" component="div">The first token</Typography>
-            <TokenSelectorAutocomplete selectedValue={props.token1} setSelectedValue={(val: TokenType) => { props.setToken1(val) }} tokens={props.valuetokens.concat(props.agphTokens)} ></TokenSelectorAutocomplete>
+            <TokenSelectorAutocomplete selectedValue={props.token1} setSelectedValue={(val: TokenType) => {
+
+                // Can't select the same as token2
+                if (props.token2.address === val.address) {
+                    return;
+                }
+                props.setToken1(val)
+            }}
+                tokens={getTokensForSelector(props.token2.address)} ></TokenSelectorAutocomplete>
             <TextField
                 value={props.token1Amount}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,7 +109,16 @@ export function DeployNewPair(props: NewPairProps) {
         <Divider sx={{ marginTop: "20px" }} />
         <Paper sx={{ padding: "20px" }}>
             <Typography variant="body1" component="div">Second token</Typography>
-            <TokenSelectorAutocomplete selectedValue={props.token2} setSelectedValue={(val: TokenType) => { props.setToken2(val) }} tokens={props.valuetokens.concat(props.agphTokens)}></TokenSelectorAutocomplete>
+            <TokenSelectorAutocomplete selectedValue={props.token2} setSelectedValue={(val: TokenType) => {
+
+                if (props.token1.address === val.address) {
+                    return;
+                }
+                props.setToken2(val)
+
+            }} tokens={
+                getTokensForSelector(props.token1.address)
+            }></TokenSelectorAutocomplete>
             <TextField
                 value={props.token2Amount}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,7 +128,25 @@ export function DeployNewPair(props: NewPairProps) {
                 type={"number"} autoComplete="off" label="Amount per token" variant="outlined" sx={{ width: "100%", marginTop: "10px" }} />
         </Paper>
         <Divider sx={{ marginBottom: "10px" }} />
-        <Typography sx={{}} variant="body1" component="div" >{props.deploymentCost}</Typography>
-        <Button variant="contained" sx={{ marginTop: "20px", marginBottom: "20px  " }}>Deploy new pair</Button>
+        <ShowDeploymentCostLoader message={getDeploymentConstMessage(props.deploymentCost)} showLoader={props.loadingDeploymentCost}></ShowDeploymentCostLoader>
+        <Button onClick={async () => {
+            await props.deployPair()
+        }} disabled={isDeployButtonDisabled()} variant="contained" sx={{ marginTop: "20px", marginBottom: "20px  " }}>Deploy new pair</Button>
+    </Stack>
+}
+
+export interface PairDeploymentSuccessProps {
+    newPairName: string;
+    refreshTime: number
+}
+
+export function PairDeploymentSuccess(props: PairDeploymentSuccessProps) {
+    return <Stack direction="column" justifyContent="center">
+
+        <Paper sx={{ padding: "20px", marginBottom: "20px" }}>
+            <Typography variant="h5" component="div">Token Deployment Success</Typography>
+            <Typography variant="body1" component="div">You created {props.newPairName}</Typography>
+            <Typography variant="body1" component="div">The page will refresh in {props.refreshTime} seconds!</Typography>
+        </Paper>
     </Stack>
 }
