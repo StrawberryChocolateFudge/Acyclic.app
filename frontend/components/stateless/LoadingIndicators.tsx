@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Stack, Typography } from "@mui/material";
 
 
 export function RippleLoading() {
@@ -22,5 +23,19 @@ export function getLoadingMessages(messageType: LoadingMessageType, errMessage: 
         default:
             return "LOADING"
     }
+}
 
+export interface LoadingPageProps {
+    loadingText: string
+}
+
+export function LoadingPage(props: LoadingPageProps) {
+    return <Stack flexDirection="column" alignContent={"center"} width={"100%"} height={"100%"}>
+        <Stack flexDirection={"row"} justifyContent="center" width={"100%"} height={"100%"}>
+            <RippleLoading></RippleLoading>
+        </Stack>
+        <Stack flexDirection={"row"} justifyContent="center" width={"100%"} height={"100%"}>
+            <Typography variant="h5" component="h5">{props.loadingText}</Typography>
+        </Stack>
+    </Stack >
 }

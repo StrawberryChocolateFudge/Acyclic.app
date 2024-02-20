@@ -1,6 +1,6 @@
-import { Autocomplete, Box, FormControl, InputLabel, Menu, MenuItem, Select, SelectChangeEvent, TextField, useThemeProps } from "@mui/material";
+import { Autocomplete, Box, FormControl, MenuItem, Select, SelectChangeEvent, TextField } from "@mui/material";
 import * as React from "react";
-import { supportedAssetsPlaceHolder, TokenType } from "../data";
+import { supportedAssetsPlaceHolder, TokenType } from "../../data";
 
 export interface SelectState {
     selected: string;

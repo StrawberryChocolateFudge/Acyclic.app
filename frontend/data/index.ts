@@ -1,4 +1,6 @@
-import { AGPHStruct } from "../../lib/traverseDAG";
+import { AGPHStruct, Dag, generateDag, Option } from "../../lib/traverseDAG";
+
+const SLEEPTIME = 10;
 
 //Sleep to mock network latency
 function sleep(ms) {
@@ -6,24 +8,35 @@ function sleep(ms) {
 }
 
 export type FetchAllGraphsResponse = {
-  selectOptions: TokenType[],
-  agphList: AGPHStruct[]
-}
+  selectOptions: TokenType[];
+  agphList: AGPHStruct[];
+};
+
+export type AgphSelectOption = {
+  value: string;
+  name: string;
+  address: string;
+  logo: string;
+  valueInDollars: string;
+};
+
+export type AgphSelectOptions = AgphSelectOption[];
+
+export const DEFAULT_AGPH_SELECT_OPTIONS = [{ value: "", name: "", address: "", logo: "", valueInDollars: "" }];
+
 
 //TODO: THIS IS MOCKED, REPLACE IT LATEr
-export async function fetchAllGraphs()  {
-  // sleep for 2 seconds
-
+export async function fetchAllGraphs() {
   // Then return the mock data
 
-  await sleep(10); // sleep 2 seconds
-  // THIS FUNCTION MUST GET the agphList: AGPHStruct[] from the blockchain
-  // Then generate a return compatible to show on the drop down select
-  // and also return the raw response too
-  //TODO: MAP THE selectOptions from the agphList then return them both
-  return {
-    
-    selectOptions:[
+  await sleep(SLEEPTIME);
+  //TODO: get the provider on testnet with RPC
+  //TODO: get contract with the provider
+  //TODO: // getAllAGPH from the contract store
+  const agphList = [];
+  //TODO: Iterate over the agph list and create selectOptions from it!
+
+  const selectOptions = [
     {
       name: "AGPH1-ETH/USD",
       value: "AGPH1",
@@ -39,15 +52,18 @@ export async function fetchAllGraphs()  {
       valueInDollars: "10",
     },
     {
-      name: "APGH3-AGPH1/AGPH2",
+      name: "AGPH3-AGPH1/AGPH2",
       value: "AGPH3",
       address: "0x0000000000000000000000000000000000000000",
       logo: "",
       valueInDollars: "10",
     },
-  ],
-  agphList: []
-};
+  ];
+
+  return {
+    selectOptions,
+    agphList,
+  };
 }
 
 export interface TokenType {
@@ -65,8 +81,16 @@ export const supportedAssetsPlaceHolder: TokenType[] = [{
 }];
 
 export async function fetchAllSupportedAssets(): Promise<TokenType[]> {
-  await sleep(10); // sleep 2 seconds
-  return [
+  //TODO: Get the RPC provider for testnet
+  //TODO: get the RequestedTokens contract
+  // getAllTokens() from the blockchain
+
+  const allTokens = [];
+
+  // Use the token addresses to get the logos and the value in dollars from somewhere!
+  // Return that
+
+  const fetchedValueAndLogo = [
     {
       name: "USDC",
       address: "0x0000000000000000000000000000000000000000",
@@ -92,9 +116,49 @@ export async function fetchAllSupportedAssets(): Promise<TokenType[]> {
       valueInDollars: "12",
     },
   ];
+
+  await sleep(SLEEPTIME);
+  return fetchedValueAndLogo;
 }
 
-export async function calculateTVL() {
+export function generateOrgChart(
+  agphList: AGPHStruct[],
+  symbol: string,
+  assetAmount: string,
+): Option<Dag> {
+  return generateDag(agphList, symbol, assetAmount);
 }
 
-export async function calculatTokenPrices() {}
+// This is a simplified example of an org chart with a depth of 2.
+// Note how deeper levels are defined recursively via the `children` property.
+export const orgChart = {
+  name: "PLMR2",
+  children: [
+    {
+      name: "PLMR1",
+      attributes: {
+        Amount: "1",
+      },
+      children: [
+        {
+          name: "USDC",
+          attributes: {
+            Amount: "100",
+          },
+        },
+        {
+          name: "WETH",
+          attributes: {
+            Amount: "0.001",
+          },
+        },
+      ],
+    },
+    {
+      name: "ETH",
+      attributes: {
+        Amount: "0.01",
+      },
+    },
+  ],
+};

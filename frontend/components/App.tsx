@@ -1,7 +1,7 @@
 import * as React from "react";
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Base } from "./Base";
+import { Base } from "./stateful/Base";
 import { Stack } from "@mui/material";
 
 const darkTheme = createTheme({
