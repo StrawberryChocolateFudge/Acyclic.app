@@ -16,7 +16,10 @@ export interface ActionTabProps {
     token2: TokenType;
     tokenMintAmount: string;
     setTokenMintAmount: (to: string) => void;
-    tokenDepositCost: TokenDepositCost
+    tokenDepositCost: TokenDepositCost;
+
+    tokenUnwrapAmount: string;
+    setTokenUnwrapAmount: (to: string) => void;
 }
 
 export type TokenDepositCost = {
@@ -49,7 +52,12 @@ export function ActionTabs(props: ActionTabProps) {
             ></Wrap>
         </TabPanel>
         <TabPanel value={props.wrapUnwrapTab} index={1}>
-            <UnWrap></UnWrap>
+            <UnWrap
+                token1={props.token1}
+                token2={props.token2}
+                tokenUnwrapAmount={props.tokenUnwrapAmount}
+                setTokenUnwrapAmount={(to: string) => props.setTokenUnwrapAmount(to)}
+            ></UnWrap>
         </TabPanel>
     </Box >
 }

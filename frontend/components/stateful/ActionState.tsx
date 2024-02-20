@@ -1,9 +1,6 @@
-import { Box, Tab, Tabs } from "@mui/material";
 import * as React from "react";
-import GraphDialog from "./GraphDialogState";
 import { supportedAssetsPlaceHolder, TokenType } from "../../data";
 import { AGPHStruct } from "../../../lib/traverseDAG";
-import { UnWrap, Wrap } from "../stateless/WrapInteractions";
 import { DeployNewPair } from "../stateless/DeployNewPair";
 import { ActionTabs, TokenDepositCost } from "../stateless/ActionTabs";
 
@@ -87,6 +84,8 @@ export function AGPHActionState(props: AGPRActionsProps) {
         tokenMintAmount={tokenMintAmount}
         setTokenMintAmount={setTokenMintAmount}
         tokenDepositCost={tokenDepositCost}
+        tokenUnwrapAmount={tokenUnwrapAmount}
+        setTokenUnwrapAmount={(to: string) => setTokenUnwrapAmount(to)}
     ></ActionTabs>
 }
 

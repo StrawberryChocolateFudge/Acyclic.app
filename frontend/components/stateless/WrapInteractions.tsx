@@ -10,7 +10,7 @@ interface WrapProps {
     setTokenMintAmount: (to: string) => void;
     tokenDepositCost: { wrappedAmount: string, depositFee: string, totalDeposit: string };
 }
-
+//TODO: display how much tokens the user needs to deposit with the fee to mint the amount
 export function Wrap(props: WrapProps) {
     return <Stack direction="column" justifyContent="center">
         <Paper sx={{ padding: "20px" }}>
@@ -24,8 +24,18 @@ export function Wrap(props: WrapProps) {
     </Stack>
 }
 
-interface UnWrapProps { }
-
+interface UnWrapProps {
+    token1: TokenType;
+    token2: TokenType;
+    tokenUnwrapAmount: string;
+    setTokenUnwrapAmount: (to: string) => void;
+    // tokenBurnRedemotion: {
+    //     burnAmount: string,
+    //     token1Amount: string,
+    //     token2Amount: string
+    // }
+}
+//TODO: Display how much tokens the user gets for burning amount!
 export function UnWrap(props: UnWrapProps) {
     return <Stack direction="column" justifyContent="center">
         <Paper sx={{ padding: "20px" }}>
