@@ -6,6 +6,7 @@ import { AGPHActionState } from "../stateful/ActionState";
 import { CurrentPage } from "../stateful/Base";
 import { AgphSelectOptions, TokenType } from "../../data";
 import { AGPHStruct } from "../../../lib/traverseDAG";
+import { WeAreOnTestnet } from "../testnet/weAreOnTestnet";
 
 export interface DerivativesPageProps {
     setCurrentPage: (to: CurrentPage) => void;
@@ -24,7 +25,10 @@ export function DerivativesPage(props: DerivativesPageProps) {
         paddingLeft: "20px",
         paddingRight: "20px"
     }}>
+        <WeAreOnTestnet></WeAreOnTestnet>
+
         <Stack direction="row" justifyContent="space-between">
+
             <div>
                 <img alt="Acyclic" src="/imgs/Acycliclogo.webp" width="200px" style={{ boxShadow: "rgba(0, 0, 0, 0.35) 0px 5px 15px" }} />
                 <Typography sx={{ marginBottom: "5px" }} variant="h6" component="div"> Token Derivatives</Typography>
