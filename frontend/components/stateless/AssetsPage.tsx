@@ -1,10 +1,11 @@
-import { Box, Divider, Link, Paper, Stack, Button, SelectChangeEvent, Typography } from "@mui/material";
+import { Box, Divider, Link, Paper, Stack, Button, Typography } from "@mui/material";
 
 import * as React from "react";
 import { TokenType } from "../../data";
 import { ChainIds, explorerAddressPath } from "../../web3";
 import { ArrowBack } from "@mui/icons-material";
 import { CurrentPage } from "../stateful/Base";
+import { WeAreOnTestnet } from "../testnet/weAreOnTestnet";
 
 
 export interface AssetsPageProps {
@@ -21,6 +22,7 @@ export function AssetsPage(props: AssetsPageProps) {
         paddingLeft: "20px",
         paddingRight: "20px"
     }}>
+        <WeAreOnTestnet></WeAreOnTestnet>
         <Stack direction="row" justifyContent="space-between">
             <div>
                 <img alt="Acyclic" src="/imgs/Acycliclogo.webp" width="200px" style={{ boxShadow: "rgba(0, 0, 0, 0.35) 0px 5px 15px" }} />
@@ -33,7 +35,6 @@ export function AssetsPage(props: AssetsPageProps) {
                 onClick={() => props.setCurrentPage(CurrentPage.DerivativesPage)}
             >Derivatives</Button>
         </Stack>
-
         <AssetsActions tokens={props.supportedTokens}></AssetsActions>
     </Paper >
 }
