@@ -1,11 +1,16 @@
+import { formatEther } from "ethers/lib/utils";
 import { AGPHStruct, Dag, generateDag, Option } from "../../lib/traverseDAG";
+import {
+  AbiPath,
+  ChainIds,
+  contractAddresses,
+  getJsonRpcProvider,
+  getRpcContract,
+  TestnetTokenSymbols,
+} from "../web3";
+import { ERC20, GraphStore_View, RequestedTokens_View } from "../web3/bindings";
 
-const SLEEPTIME = 10;
-
-//Sleep to mock network latency
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+export const NETWORK = ChainIds.ARBITRUM_SEPOLINA_TESTNET;
 
 export type FetchAllGraphsResponse = {
   selectOptions: TokenType[];
@@ -22,43 +27,33 @@ export type AgphSelectOption = {
 
 export type AgphSelectOptions = AgphSelectOption[];
 
-export const DEFAULT_AGPH_SELECT_OPTIONS = [{ value: "", name: "", address: "", logo: "", valueInDollars: "" }];
+export const DEFAULT_AGPH_SELECT_OPTIONS = [{
+  value: "",
+  name: "",
+  address: "",
+  logo: "",
+  valueInDollars: "",
+}];
 
-
-//TODO: THIS IS MOCKED, REPLACE IT LATEr
 export async function fetchAllGraphs() {
-  // Then return the mock data
+  const JSONRPCProvider = getJsonRpcProvider(NETWORK);
+  const graphStore = await getRpcContract(
+    JSONRPCProvider,
+    contractAddresses[NETWORK].graphStore,
+    AbiPath.GraphStore,
+  );
 
-  await sleep(SLEEPTIME);
-  //TODO: get the provider on testnet with RPC
-  //TODO: get contract with the provider
-  //TODO: // getAllAGPH from the contract store
-  const agphList = [];
-  //TODO: Iterate over the agph list and create selectOptions from it!
+  const agphList: AGPHStruct[] = await GraphStore_View.getAllAGPH(graphStore);
 
-  const selectOptions = [
-    {
-      name: "AGPH1-ETH/USD",
-      value: "AGPH1",
-      address: "0x0000000000000000000000000000000000000000",
+  const selectOptions = agphList.map((agraphs) => {
+    return {
+      name: agraphs.agphName,
+      value: agraphs.agphSymbol,
+      address: agraphs.agphAddress,
       logo: "",
-      valueInDollars: "10",
-    },
-    {
-      name: "AGPH2-ARB/ETH",
-      value: "AGPH2",
-      address: "0x0000000000000000000000000000000000000000",
-      logo: "",
-      valueInDollars: "10",
-    },
-    {
-      name: "AGPH3-AGPH1/AGPH2",
-      value: "AGPH3",
-      address: "0x0000000000000000000000000000000000000000",
-      logo: "",
-      valueInDollars: "10",
-    },
-  ];
+      valueInDollars: "",
+    };
+  });
 
   return {
     selectOptions,
@@ -81,44 +76,67 @@ export const supportedAssetsPlaceHolder: TokenType[] = [{
 }];
 
 export async function fetchAllSupportedAssets(): Promise<TokenType[]> {
-  //TODO: Get the RPC provider for testnet
-  //TODO: get the RequestedTokens contract
-  // getAllTokens() from the blockchain
+  const JSONRPCProvider = getJsonRpcProvider(NETWORK);
+  const requestedTokensContract = await getRpcContract(
+    JSONRPCProvider,
+    contractAddresses[NETWORK].requestedTokens,
+    AbiPath.RequestedTokens,
+  );
+  const allTokens = await RequestedTokens_View.getAcceptedTokens(
+    requestedTokensContract,
+  );
 
-  const allTokens = [];
+  return await fetchAcceptedTokenDetails(allTokens, JSONRPCProvider);
+}
 
-  // Use the token addresses to get the logos and the value in dollars from somewhere!
-  // Return that
+export async function fetchAcceptedTokenDetails(
+  allTokens: string[],
+  provider: any,
+) {
+  let result: TokenType[] = [];
 
-  const fetchedValueAndLogo = [
-    {
-      name: "USDC",
-      address: "0x0000000000000000000000000000000000000000",
-      logo: "",
-      valueInDollars: "10",
-    },
-    {
-      name: "EURC",
-      address: "0x0000000000000000000000000000000000000000",
-      logo: "",
-      valueInDollars: "10",
-    },
-    {
-      name: "USDT",
-      address: "0x0000000000000000000000000000000000000000",
-      logo: "",
-      valueInDollars: "134",
-    },
-    {
-      name: "ETH",
-      address: "0x0000000000000000000000000000000000000000",
-      logo: "",
-      valueInDollars: "12",
-    },
-  ];
+  for (let i = 0; i < allTokens.length; i++) {
+    // const requestedTokensContract = await getRpcContract(
+    //   provider,
+    //   allTokens[i],
+    //   AbiPath.ERC20,
+    // );
+    // const tokenSymbol = await ERC20.symbol(requestedTokensContract);
 
-  await sleep(SLEEPTIME);
-  return fetchedValueAndLogo;
+    //TODO: This is too slow!! I need to do some other way. the requestedTokens contract should contain this already from the start!
+    //TODO: allTokens should be a struct that already contains the stuff
+
+    const tokenSymbol = TestnetTokenSymbols[allTokens[i]];
+
+    result.push({
+      name: tokenSymbol,
+      address: allTokens[i],
+      logo: "",
+      valueInDollars: "0",
+    });
+  }
+
+  return result;
+}
+
+export async function getDeploymentCostsForTokens(
+  token1Address: string,
+  token2Address: string,
+) {
+  const JSONRPCProvider = getJsonRpcProvider(NETWORK);
+  const graphStore = await getRpcContract(
+    JSONRPCProvider,
+    contractAddresses[NETWORK].graphStore,
+    AbiPath.GraphStore,
+  );
+
+  const deploymentFee = await GraphStore_View.getDeploymentFee(
+    graphStore,
+    token1Address,
+    token2Address,
+  );
+
+  return formatEther(deploymentFee);
 }
 
 export function generateOrgChart(
@@ -128,37 +146,3 @@ export function generateOrgChart(
 ): Option<Dag> {
   return generateDag(agphList, symbol, assetAmount);
 }
-
-// This is a simplified example of an org chart with a depth of 2.
-// Note how deeper levels are defined recursively via the `children` property.
-export const orgChart = {
-  name: "PLMR2",
-  children: [
-    {
-      name: "PLMR1",
-      attributes: {
-        Amount: "1",
-      },
-      children: [
-        {
-          name: "USDC",
-          attributes: {
-            Amount: "100",
-          },
-        },
-        {
-          name: "WETH",
-          attributes: {
-            Amount: "0.001",
-          },
-        },
-      ],
-    },
-    {
-      name: "ETH",
-      attributes: {
-        Amount: "0.01",
-      },
-    },
-  ],
-};
