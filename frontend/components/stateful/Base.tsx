@@ -50,9 +50,6 @@ export function Base() {
         loadGraphs();
     }, []);
 
-
-    const setPage = (to: CurrentPage) => () => setCurrentPage(to);
-
     if (showLoading) {
         return <LoadingPage
             loadingText={loadingText}
@@ -62,7 +59,7 @@ export function Base() {
     if (currentPage === CurrentPage.DerivativesPage) {
         return <DerivativesPage
             supportedTokens={supportedTokens}
-            setCurrentPage={setPage}
+            setCurrentPage={(to: CurrentPage) => setCurrentPage(to)}
             agphOptions={agphOptions}
             selectedAction={selectedAction}
             setSelectedAction={setSelectedAction}
@@ -71,7 +68,7 @@ export function Base() {
     } else {
         return <AssetsPage
             supportedTokens={supportedTokens}
-            setCurrentPage={setPage}
+            setCurrentPage={(to: CurrentPage) => setCurrentPage(to)}
         ></AssetsPage>
     }
 }

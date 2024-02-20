@@ -31,7 +31,10 @@ export function DerivativesPage(props: DerivativesPageProps) {
             </div>
             <Button sx={{
                 height: "70px"
-            }} variant="contained" onClick={() => props.setCurrentPage(CurrentPage.AssetsPage)} endIcon={<ArrowForward />}>Assets</Button>
+            }} variant="contained" onClick={() => {
+                console.log("assets page nav pressed")
+                props.setCurrentPage(CurrentPage.AssetsPage)
+            }} endIcon={<ArrowForward />}>Assets</Button>
 
         </Stack>
         <AGPHSelect
