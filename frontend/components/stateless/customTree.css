@@ -1,0 +1,24 @@
+/* custom-tree.css */
+
+.node__root>circle {
+    fill: lightgrey;
+    r: 20;
+}
+
+.node__root>g>text{
+    fill: "white";
+}
+
+.node__branch>circle {
+    /* fill: white; */
+}
+
+.node__leaf>circle {
+    fill: lightblue;
+    /* Let's also make the radius of leaf nodes larger */
+    r: 20;
+}
+
+.rd3t-label>text{
+    fill: white;
+}
