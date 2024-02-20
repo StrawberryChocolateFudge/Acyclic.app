@@ -100,7 +100,7 @@ describe("graphStore", function () {
         token2Addr,
         token2Rate,
         token2DecimalShift,
-        { value: parseEther("0") },
+        { value: parseEther("0.05") },
       );
     } catch (err: any) {
       errorOccured = true;
@@ -166,7 +166,7 @@ describe("graphStore", function () {
       token2Addr,
       token2Rate,
       token2DecimalShift,
-      { value: parseEther("0") },
+      { value: parseEther("0.05") },
     );
     expect(await graphStore.lastIndex()).to.equal(1);
   });

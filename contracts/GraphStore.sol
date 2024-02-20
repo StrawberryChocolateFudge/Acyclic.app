@@ -10,7 +10,7 @@ import "./interfaces/IRequestedTokens.sol";
 import "./clone/CloneFactory.sol";
 
 // ╔═╗┬─┐┌─┐┌─┐┬ ┬╔═╗┌┬┐┌─┐┬─┐┌─┐
-// ║ ╦├┬┘├─┤├─┘├─┤╚═╗ │ │ │├┬┘├┤ 
+// ║ ╦├┬┘├─┤├─┘├─┤╚═╗ │ │ │├┬┘├┤
 // ╚═╝┴└─┴ ┴┴  ┴ ┴╚═╝ ┴ └─┘┴└─└─┘
 // This contract is used to deploy new Graphs to wrap tokens into.
 // The contract also controls the fees and transfers the fee to the owner
@@ -22,11 +22,12 @@ contract GraphStore is Ownable, CloneFactory {
 
     address private agphLib; // The contract address of the graph token library used for the factory pattern deployments
 
-   bytes32 private constant _ONDEPLOYRETURN =
+    bytes32 private constant _ONDEPLOYRETURN =
         keccak256("GraphStore.onCreateNewAGPH");
 
     error InvalidDecimals();
     error OnlyAcceptedToken();
+    error TokensCantBeTheSame();
     error InvalidRate();
     error OnlyOwner();
     error NotEnoughDeploymentFee();
@@ -185,6 +186,13 @@ contract GraphStore is Ownable, CloneFactory {
         address token1Addr,
         address token2Addr
     ) internal view {
+        // Addresses can't be equal and they can't be zero
+
+        if (token1Addr == address(0)) revert OnlyAcceptedToken();
+        if (token2Addr == address(0)) revert OnlyAcceptedToken();
+        //Tokens can't be the same!
+        if (token1Addr == token2Addr) revert TokensCantBeTheSame();
+
         // If the address is not a AGPH address
         if (!isAGPHAddress[token1Addr]) {
             // Only allow creating token pairs that were reviewed
@@ -282,9 +290,7 @@ contract GraphStore is Ownable, CloneFactory {
     }
 
     // Returns a deployed contract by index from the array
-    function getAGPHByIndex(
-        uint256 index
-    ) external view returns (AGPH memory) {
+    function getAGPHByIndex(uint256 index) external view returns (AGPH memory) {
         return allAGPH[index];
     }
 
@@ -301,9 +307,11 @@ contract GraphStore is Ownable, CloneFactory {
         address token1Addr,
         address token2Addr
     ) public view returns (uint256) {
+        // The default deploymentCounter shoud be 1 and then I increment it, so all deployments cost deposits to mitigate spam attacks
         return
-            deploymentCounter[tokenAddressHasher(token1Addr, token2Addr)].mul(
-                AGPHDeploymentBaseFee
-            );
+            (
+                deploymentCounter[tokenAddressHasher(token1Addr, token2Addr)]
+                    .add(1)
+            ).mul(AGPHDeploymentBaseFee);
     }
 }
