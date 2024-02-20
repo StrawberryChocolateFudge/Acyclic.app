@@ -1,6 +1,6 @@
 //HERE STARTS THE CONTRACT BINDINGS!
 
-import { BigNumber, ContractTransaction } from "ethers";
+import { BigNumber, ContractReceipt, ContractTransaction } from "ethers";
 import { parseEther } from "ethers/lib/utils";
 import { GraphStore } from "../../typechain/GraphStore";
 import { AGPHStruct } from "../../lib/traverseDAG";
@@ -59,12 +59,12 @@ export type GraphStore_Interactor = {
   ) => Promise<ContractTransaction>;
   filterNewAGPHEvent: (
     contract: GraphStore,
-    tx: ContractTransaction,
+    tx: ContractReceipt,
   ) => Promise<AGPHStruct>;
 };
 
 // Interactors need a wallet with private key
-export const graphStore_Interactor: GraphStore_Interactor = {
+export const GraphStore_Interactor: GraphStore_Interactor = {
   createNewAGPH: async (
     contract: GraphStore,
     createNewAGPHArgs: CreateNewAGPHArgs,
@@ -80,8 +80,10 @@ export const graphStore_Interactor: GraphStore_Interactor = {
       { value: parseEther(value) },
     );
   },
-  filterNewAGPHEvent: async (contract: GraphStore, tx: ContractTransaction) => {
-    const receipt = await tx.wait();
+  filterNewAGPHEvent: async (
+    contract: GraphStore,
+    receipt: ContractReceipt,
+  ) => {
     const filter = contract.filters.NewAGPH();
     const events = await contract.queryFilter(filter, receipt.blockHash);
     const event = events[0];
@@ -177,4 +179,9 @@ export const RequestedTokens_View: RequestedTokens_View = {
   getAcceptedTokens: async (contract: RequestedTokens) => {
     return await contract.getAcceptedTokens();
   },
+};
+
+export const MintTestnetERC20Tokens = {
+  MintTestnetTokens: async (contract: any, amount: string) =>
+    await contract.MintTestnetTokens(parseEther(amount)),
 };
