@@ -43,6 +43,23 @@ export const explorerAddressPath: { [key in ChainIds]: string } = {
     "address/",
 };
 
+export const contractAddresses: {
+  [key in ChainIds]: { requestedTokens: string; graphStore: string };
+} = {
+  [ChainIds.ARBITRUM_SEPOLINA_TESTNET]: {
+    requestedTokens: "0x8A0DF947c126574567592019aCf31dfd09E9A61e",
+    graphStore: "0x2960614E2cAB6f74ce1e46484d85daF48605793F",
+  },
+};
+
+export const AbiPath = {
+  AGPH: "/AGPH.json",
+  ERC20: "/ERC20.json",
+  GraphStore: "/GraphStore.json",
+  RequestedTokens: "/RequestedTokens.json",
+  TestERC20: "/TestERC20.json"
+}
+
 // THIS IS THE PROVIDER TO USE WHEN FETCHIGN DATA WITHOUT CONNETCING THE WALLET
 export function getJsonRpcProvider(chainId: string): any {
   const getProvider = (url: RPCURLS) =>
