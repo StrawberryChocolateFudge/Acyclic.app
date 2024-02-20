@@ -40,13 +40,17 @@ export function Base() {
                 setAgphOptions(graphs.selectOptions);
                 setAgphList(graphs.agphList);
 
-                setSelectedAction(graphs.selectOptions[0].value);
+                if (graphs.selectOptions.length === 0) {
+                    setSelectedAction("new");
+                } else {
+                    setSelectedAction(graphs.selectOptions[graphs.selectOptions.length - 1].value);
+                }
+
                 setShowLoading(false);
             } catch (err: any) {
                 setLoadingText(getLoadingMessages(LoadingMessageType.ERROROCCURED, err.message));
             }
         }
-
         loadGraphs();
     }, []);
 
