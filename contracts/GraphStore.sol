@@ -27,6 +27,7 @@ contract GraphStore is Ownable, CloneFactory {
 
     error InvalidDecimals();
     error OnlyAcceptedToken();
+    error MustContainNonAGPH();
     error TokensCantBeTheSame();
     error InvalidRate();
     error OnlyOwner();
@@ -205,6 +206,10 @@ contract GraphStore is Ownable, CloneFactory {
             if (requestedTokens.getStatus(token2Addr) != TokenStatus.ACCEPTED)
                 revert OnlyAcceptedToken();
         }
+
+        if (isAGPHAddress[token1Addr] && isAGPHAddress[token2Addr])
+        //If both addresses are AGPH addresses that's not allowed, so a value token must be added always
+            revert MustContainNonAGPH();
     }
 
     /**

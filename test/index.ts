@@ -525,11 +525,6 @@ describe("graphStore", function () {
       ...buildToken2_RegisterAgphParams(agph2.agphAddress, 1, 0), //1 AGPH2
     };
 
-    const agph6Params: RegisterNewAgphArgs = {
-      ...buildToken1_RegisterAgphParams(agph3.agphAddress, 1, 0), //1 AGPH3
-      ...buildToken2_RegisterAgphParams(agph4.agphAddress, 1, 0), //1 AGPH4
-    };
-
     const agph7Params: RegisterNewAgphArgs = {
       ...buildToken1_RegisterAgphParams(agph4.agphAddress, 1, 3), //0.001 BTC
       ...buildToken2_RegisterAgphParams(USD.address, 1000, 0), // 1000 USD
@@ -545,29 +540,25 @@ describe("graphStore", function () {
       agph5Params.token2Addr,
     );
 
-    await graphStore.connect(bob).createNewAGPH(
-      agph5Params.token1Addr,
-      agph5Params.token1Rate,
-      agph5Params.token1DecimalShift,
-      agph5Params.token2Addr,
-      agph5Params.token2Rate,
-      agph5Params.token2DecimalShift,
-      { value: deploymentFee },
-    );
-    deploymentFee = await graphStore.getDeploymentFee(
-      agph6Params.token1Addr,
-      agph6Params.token2Addr,
-    );
+    let errorOccured = false;
+    let errorMessage = "";
 
-    await graphStore.connect(bob).createNewAGPH(
-      agph6Params.token1Addr,
-      agph6Params.token1Rate,
-      agph6Params.token1DecimalShift,
-      agph6Params.token2Addr,
-      agph6Params.token2Rate,
-      agph6Params.token2DecimalShift,
-      { value: deploymentFee },
-    );
+    try {
+      await graphStore.connect(bob).createNewAGPH(
+        agph5Params.token1Addr,
+        agph5Params.token1Rate,
+        agph5Params.token1DecimalShift,
+        agph5Params.token2Addr,
+        agph5Params.token2Rate,
+        agph5Params.token2DecimalShift,
+        { value: deploymentFee },
+      );
+    } catch (err: any) {
+      errorOccured = true;
+      errorMessage = err.message;
+    }
+    expect(errorOccured).to.be.true;
+    expect(errorMessage.includes("MustContainNonAGPH")).to.be.true;
 
     deploymentFee = await graphStore.getDeploymentFee(
       agph7Params.token1Addr,
@@ -605,7 +596,7 @@ describe("graphStore", function () {
       expect(events.length).to.equal(1);
       const event = events[0];
       expect(event.event).to.equal("NewAGPH");
-      expect(event.args[0].agphName).to.equal("AGPH8-BTC/USD");
+      expect(event.args[0].agphName).to.equal("AGPH6-BTC/USD");
       const args = event.args[0];
       //I just leave it here in case I need to log it
       ({
@@ -628,11 +619,11 @@ describe("graphStore", function () {
     const allAGPHS = await graphStore.getAllAGPH();
     //now I generate a DAG for AGPH8 with amount 1
 
-    const AGPH7dagOption = generateDag(allAGPHS, "AGPH7", "1");
+    const AGPH7dagOption = generateDag(allAGPHS, "AGPH5", "1");
 
     // DAG generation success, now I need to expect and verify it!
     expect(AGPH7dagOption.result).to.equal(Result.SOME);
-    expect(AGPH7dagOption.data.name).to.equal("AGPH7");
+    expect(AGPH7dagOption.data.name).to.equal("AGPH5");
     expect(AGPH7dagOption.data?.attributes?.Amount).to.equal("1");
     expect(AGPH7dagOption.data.metadata.rate).to.equal(1);
     expect(AGPH7dagOption.data.metadata.decimalShift).to.equal(0);
@@ -643,8 +634,6 @@ describe("graphStore", function () {
     expect(agph7DagChildren[0].children?.length).to.equal(2);
     expect(agph7DagChildren[0].metadata.isAgph).to.equal(true);
     //ETC... I did not check all DAG parameters, they look good!
-
-    console.log(JSON.stringify(AGPH7dagOption.data));
   });
 
   it("Test mint and unwrap", async function () {
