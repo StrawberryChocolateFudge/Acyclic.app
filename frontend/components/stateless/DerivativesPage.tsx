@@ -14,7 +14,8 @@ export interface DerivativesPageProps {
     agphOptions: AgphSelectOptions;
     selectedAction: string;
     setSelectedAction: (to: string) => void;
-    agphList: AGPHStruct[]
+    agphList: AGPHStruct[];
+    feeDivider: number;
 }
 
 export function DerivativesPage(props: DerivativesPageProps) {
@@ -45,6 +46,6 @@ export function DerivativesPage(props: DerivativesPageProps) {
             options={props.agphOptions}
             selected={props.selectedAction}
             handleSelect={(event: SelectChangeEvent) => { props.setSelectedAction(event.target.value) }}></AGPHSelect>
-        <AGPHActionState agphList={props.agphList} agphTokens={props.agphOptions} valuetokens={props.supportedTokens} selected={props.selectedAction}></AGPHActionState>
+        <AGPHActionState feeDivider={props.feeDivider} agphList={props.agphList} agphTokens={props.agphOptions} valuetokens={props.supportedTokens} selected={props.selectedAction}></AGPHActionState>
     </Paper>;
 }

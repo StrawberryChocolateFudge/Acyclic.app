@@ -1,14 +1,18 @@
-import { Box, Tab, Tabs } from "@mui/material";
+import { Box, Stack, Tab, Tabs, Typography } from "@mui/material";
 import * as React from "react";
-import { supportedAssetsPlaceHolder, TokenType } from "../../data";
+import { TokenType } from "../../data";
 import { AGPHStruct } from "../../../lib/traverseDAG";
-import { UnWrap, Wrap } from "../stateless/WrapInteractions";
-import { DeployNewPair } from "../stateless/DeployNewPair";
+import { ApprovalInfo, UnWrap, Wrap } from "../stateless/WrapInteractions";
 import GraphDialog from "../stateful/GraphDialogState";
+import { ConnectedWallet } from "../stateful/ActionState";
+import { ConnectWallet } from "./ConnectWallet";
+import { Item } from "./Item";
 
 
 export interface ActionTabProps {
+    connectedWallet: ConnectedWallet;
     selected: string;
+    selectedbalance: string;
     agphList: AGPHStruct[];
     wrapUnwrapTab: number;
     setWrapUnwrapTab: (to: number) => void;
@@ -20,15 +24,38 @@ export interface ActionTabProps {
 
     tokenUnwrapAmount: string;
     setTokenUnwrapAmount: (to: string) => void;
+    connectWalletClick: () => Promise<void>;
+
+    approvalInfo: ApprovalInfo;
+
+    feeDivider:number;
+
+    refetchApprovalInfo: () => Promise<void>
 }
 
 export type TokenDepositCost = {
-    wrappedAmount: string; depositFee: string;
-    totalDeposit: string;
+    wrappedAmount: string;
+    token1DepositFee: string;
+    token1ValueWrapped: string;
+    token1TotalDeposit: string;
+    token2DepositFee: string;
+    token2ValueWrapped: string;
+    token2TotalDeposit: string;
+}
+
+export const TOKENDEPOSITCOSTPLACEHOLDER = {
+    wrappedAmount: "",
+    token1DepositFee: "",
+    token1ValueWrapped: "",
+    token1TotalDeposit: "",
+    token2DepositFee: "",
+    token2ValueWrapped: "",
+    token2TotalDeposit: ""
 }
 
 
 export function ActionTabs(props: ActionTabProps) {
+
     return <Box sx={{ width: '100%' }}>
         <Box>
             <GraphDialog symbol={props.selected} agpList={props.agphList}></GraphDialog>
@@ -42,23 +69,38 @@ export function ActionTabs(props: ActionTabProps) {
 
             </Tabs>
         </Box>
-        <TabPanel value={props.wrapUnwrapTab} index={0}>
-            <Wrap
-                token1={props.token1}
-                token2={props.token2}
-                tokenMintAmount={props.tokenMintAmount}
-                setTokenMintAmount={(to: string) => props.setTokenMintAmount(to)}
-                tokenDepositCost={props.tokenDepositCost}
-            ></Wrap>
-        </TabPanel>
-        <TabPanel value={props.wrapUnwrapTab} index={1}>
-            <UnWrap
-                token1={props.token1}
-                token2={props.token2}
-                tokenUnwrapAmount={props.tokenUnwrapAmount}
-                setTokenUnwrapAmount={(to: string) => props.setTokenUnwrapAmount(to)}
-            ></UnWrap>
-        </TabPanel>
+        {props.connectedWallet.isConnected ? <Item>
+            <Stack flexDirection="column" justifyContent="center">
+                <Typography variant="body1" component="div">Connected Wallet</Typography>
+                <Typography variant="body1" component="div">{props.connectedWallet.address}</Typography>
+                <Typography variant="body1" component="div">{props.selected} Balance: {props.selectedbalance} </Typography>
+            </Stack>
+        </Item> : null}
+
+        {props.connectedWallet.isConnected ?
+            <TabPanel value={props.wrapUnwrapTab} index={0}>
+                <Wrap
+                    connectedWallet={props.connectedWallet}
+                    selected={props.selected}
+                    tokenMintAmount={props.tokenMintAmount}
+                    setTokenMintAmount={(to: string) => props.setTokenMintAmount(to)}
+                    tokenDepositCost={props.tokenDepositCost}
+                    approvalInfo={props.approvalInfo}
+                    feeDivider={props.feeDivider}
+                    refetchApprovalInfo={props.refetchApprovalInfo}
+                ></Wrap>
+            </TabPanel> : null}
+        {props.connectedWallet.isConnected ?
+            <TabPanel value={props.wrapUnwrapTab} index={1}>
+                <UnWrap
+                    connectedWallet={props.connectedWallet}
+                    tokenUnwrapAmount={props.tokenUnwrapAmount}
+                    setTokenUnwrapAmount={(to: string) => props.setTokenUnwrapAmount(to)}
+                    
+                ></UnWrap>
+            </TabPanel>
+            : <ConnectWallet connectWalletClick={props.connectWalletClick}></ConnectWallet>
+        }
     </Box >
 }
 
@@ -87,3 +129,4 @@ function TabPanel(props: TabPanelProps) {
         </div>
     );
 }
+

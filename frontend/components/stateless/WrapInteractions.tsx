@@ -1,49 +1,239 @@
 import { Button, Paper, Stack, TextField, Typography } from "@mui/material";
+import { parseEther } from "ethers/lib/utils";
 import * as React from "react";
-import { TokenType } from "../../data";
+import { approveAllowance, calculateApproveAmount, doDepositAction, TokenType } from "../../data";
+import { ConnectedWallet } from "../stateful/ActionState";
+import { TokenDepositCost } from "./ActionTabs";
+import { Item } from "./Item";
+import { TokenWrapDetails } from "./TokenWrapDetails";
 
+
+export type ApprovalInfo = {
+    token1Allowance: string;
+    token1Balance: string;
+    token1Symbol: string;
+    token1Rate: number;
+    token1DecimalShift: number;
+    token1Address: string;
+
+
+    token2Allowance: string;
+    token2Balance: string;
+    token2Symbol: string;
+    token2Rate: number;
+    token2DecimalShift: number;
+    token2Address: string;
+
+    spenderAddress: string;
+}
+
+export const APPROVALINFOPLACEHOLDER = {
+
+    token1Allowance: "",
+    token1Balance: "",
+    token1Symbol: "",
+    token1Rate: 0,
+    token1DecimalShift: 0,
+    token1Address: "",
+    token2Allowance: "",
+    token2Balance: "",
+    token2Symbol: "",
+    token2Rate: 0,
+    token2DecimalShift: 0,
+    token2Address: "",
+    spenderAddress: ""
+}
 
 interface WrapProps {
-    token1: TokenType;
-    token2: TokenType;
+    connectedWallet: ConnectedWallet;
+    selected: string
     tokenMintAmount: string;
     setTokenMintAmount: (to: string) => void;
-    tokenDepositCost: { wrappedAmount: string, depositFee: string, totalDeposit: string };
+    tokenDepositCost: TokenDepositCost;
+    approvalInfo: ApprovalInfo;
+    feeDivider: number
+    refetchApprovalInfo: () => Promise<void>
+
 }
-//TODO: display how much tokens the user needs to deposit with the fee to mint the amount
+
+export type WrapFeeDetails = {
+    totalApprovalAmount: string,
+    depositFee: string
+    wrappedAmount: string
+}
+
 export function Wrap(props: WrapProps) {
+    const token1WrapFeeDetails = calculateApproveAmount(props.tokenMintAmount, props.approvalInfo.token1Rate, props.approvalInfo.token1DecimalShift, props.feeDivider);
+    const token2WrapFeeDetails = calculateApproveAmount(props.tokenMintAmount, props.approvalInfo.token2Rate, props.approvalInfo.token2DecimalShift, props.feeDivider);
+
+    async function onApprove1() {
+
+        if (!token1WrapFeeDetails?.totalApprovalAmount) {
+            return;
+        }
+        await approveAllowance(props.approvalInfo.token1Address, props.approvalInfo.spenderAddress, token1WrapFeeDetails.totalApprovalAmount).then(async () => {
+            await props.refetchApprovalInfo();
+        });
+    }
+
+    async function onApprove2() {
+        if (!token2WrapFeeDetails?.totalApprovalAmount) {
+            return;
+        }
+        await approveAllowance(props.approvalInfo.token2Address, props.approvalInfo.spenderAddress, token2WrapFeeDetails.totalApprovalAmount).then(async () => {
+            await props.refetchApprovalInfo();
+        });
+    }
+
+    async function onDeposit() {
+        await doDepositAction(props.approvalInfo.spenderAddress, props.tokenMintAmount).then(async () => {
+            await props.refetchApprovalInfo();
+        });
+    }
+
+    function isApproveDisabled() {
+        if (props.tokenMintAmount === "") {
+            return true;
+        }
+
+        if (parseFloat(props.tokenMintAmount) === 0) {
+            return true;
+        }
+    }
+
+    function hideZeroApprovals(totalApprovalAmount) {
+        if (isNaN(parseFloat(totalApprovalAmount)) || parseFloat(totalApprovalAmount) === 0) {
+            return "";
+        }
+        return totalApprovalAmount;
+
+    }
+
+    function depositDisabled() {
+        if (!token1WrapFeeDetails) {
+            return true;
+        }
+
+        if (!token2WrapFeeDetails) {
+            return true;
+        }
+
+        if (!token1WrapFeeDetails.totalApprovalAmount) {
+            return true;
+        }
+
+        if (!token2WrapFeeDetails.totalApprovalAmount) {
+            return true;
+        }
+
+        if (!props.approvalInfo.token1Balance) {
+            return true;
+        }
+        if (!props.approvalInfo.token2Balance) {
+            return true;
+        }
+
+        if (parseFloat(token1WrapFeeDetails.totalApprovalAmount) > parseFloat(props.approvalInfo.token1Balance)) {
+            return true;
+        }
+        if (parseFloat(token2WrapFeeDetails.totalApprovalAmount) > parseFloat(props.approvalInfo.token2Balance)) {
+            return true;
+        }
+
+        if (parseFloat(token1WrapFeeDetails.totalApprovalAmount) > parseFloat(props.approvalInfo.token1Allowance)) {
+            return true;
+        }
+
+        if (parseFloat(token2WrapFeeDetails.totalApprovalAmount) > parseFloat(props.approvalInfo.token2Allowance)) {
+            return true;
+        }
+
+        // else I should be able to deposit, I got the balance and the approvals!
+
+        return false;
+    }
+
     return <Stack direction="column" justifyContent="center">
         <Paper sx={{ padding: "20px" }}>
-            <Typography variant="body1" component="div">Mint a new AGPH token by wrapping tokens.</Typography>
-            <TextField label="Mint Amount" variant="outlined" sx={{ width: "100%", marginTop: "10px" }}></TextField>
+            <Typography variant="body1" component="div">Mint a new {props.selected} token by wrapping tokens.</Typography>
+            <TextField value={props.tokenMintAmount} onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+
+                if (isNaN(parseFloat(event.target.value)) && event.target.value !== "") {
+                    return;
+                }
+
+                props.setTokenMintAmount(event.target.value);
+            }} type="number" label="Mint Amount" variant="outlined" sx={{ width: "100%", marginTop: "10px" }}></TextField>
         </Paper>
         <Typography variant="subtitle1" component="div">To deposit tokens first you need to approve spend for both!</Typography>
-        <Button variant="contained" sx={{ marginTop: "20px" }}>Approve token 1</Button>
-        <Button variant="contained" sx={{ marginTop: "20px" }}>Approve token 2</Button>
-        <Button variant="contained" sx={{ marginTop: "20px" }}>Deposit</Button>
+
+        <Item sx={{ marginBottom: "10px" }}>
+            <Stack flexDirection={"row"} justifyContent="flex-start">
+
+                <Button disabled={isApproveDisabled()} onClick={async () => await onApprove1()} variant="contained">Approve</Button>
+                <Stack sx={{ margin: "0 auto" }} flexDirection="column" justifyContent="center">
+                    <Typography variant="subtitle1" component="div">{hideZeroApprovals(token1WrapFeeDetails?.totalApprovalAmount)}</Typography>
+                </Stack>
+
+
+            </Stack>
+
+            <TokenWrapDetails
+                tokenName={props.approvalInfo.token1Symbol}
+                allowance={props.approvalInfo.token1Allowance}
+                balance={props.approvalInfo.token1Balance}
+                wrapFeeDetails={token1WrapFeeDetails}
+                tokenAddress={props.approvalInfo.token1Address}
+            ></TokenWrapDetails>
+        </Item>
+
+        <Item sx={{ marginBottom: "10px" }}>
+            <Stack flexDirection={"row"} justifyContent="flex-start">
+                <Button disabled={isApproveDisabled()} onClick={async () => await onApprove2()} variant="contained">Approve</Button>
+                <Stack sx={{ margin: "0 auto" }} flexDirection="column" justifyContent="center">
+                    <Typography variant="subtitle1" component="div">{hideZeroApprovals(token2WrapFeeDetails?.totalApprovalAmount)}</Typography>
+                </Stack>
+            </Stack>
+            <TokenWrapDetails
+                tokenName={props.approvalInfo.token2Symbol}
+                allowance={props.approvalInfo.token2Allowance}
+                balance={props.approvalInfo.token2Balance}
+                wrapFeeDetails={token2WrapFeeDetails}
+                tokenAddress={props.approvalInfo.token2Address}
+            ></TokenWrapDetails>
+        </Item>
+        <Button onClick={async () => await onDeposit()} disabled={depositDisabled()} variant="contained" sx={{ marginTop: "20px" }}>Deposit</Button>
     </Stack>
 }
 
 interface UnWrapProps {
-    token1: TokenType;
-    token2: TokenType;
+    connectedWallet: ConnectedWallet;
     tokenUnwrapAmount: string;
     setTokenUnwrapAmount: (to: string) => void;
-    // tokenBurnRedemotion: {
-    //     burnAmount: string,
-    //     token1Amount: string,
-    //     token2Amount: string
-    // }
 }
-//TODO: Display how much tokens the user gets for burning amount!
+
 export function UnWrap(props: UnWrapProps) {
+
+    function isUnwrapDisabled() {
+
+        return false;
+    }
+
+
     return <Stack direction="column" justifyContent="center">
         <Paper sx={{ padding: "20px" }}>
             <Typography variant="body1" component="div">Unwrap a token. Burn it and recieve the assets backing it.</Typography>
-            <TextField label="Unwrap Amount" variant="outlined" sx={{ width: "100%", marginTop: "10px" }} />
+            <TextField value={props.tokenUnwrapAmount} onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+
+                if (isNaN(parseFloat(event.target.value)) && event.target.value !== "") {
+                    return;
+                }
+
+                props.setTokenUnwrapAmount(event.target.value);
+            }} type="number" label="Unwrap Amount" variant="outlined" sx={{ width: "100%", marginTop: "10px" }} />
         </Paper>
         <Typography variant="subtitle1" component="div">After unwrapping you will have both tokens transferred to your account!</Typography>
-        <Button variant="contained" sx={{ marginTop: "20px" }}>Unwrap</Button>
+        <Button disabled={isUnwrapDisabled()} variant="contained" sx={{ marginTop: "20px" }}>Unwrap</Button>
     </Stack>
 }
 

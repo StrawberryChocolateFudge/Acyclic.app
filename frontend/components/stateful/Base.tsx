@@ -21,6 +21,9 @@ export function Base() {
     const [agphOptions, setAgphOptions] = React.useState<AgphSelectOptions>(DEFAULT_AGPH_SELECT_OPTIONS);
     const [agphList, setAgphList] = React.useState<AGPHStruct[]>([]);
 
+    const [feeDivider, setFeeDivider] = React.useState(500);
+
+
     const [selectedAction, setSelectedAction] = React.useState("");
     const [currentPage, setCurrentPage] = React.useState(CurrentPage.DerivativesPage);
 
@@ -39,6 +42,7 @@ export function Base() {
                 const graphs = await fetchAllGraphs();
                 setAgphOptions(graphs.selectOptions);
                 setAgphList(graphs.agphList);
+                setFeeDivider(graphs.feeDivider);
 
                 if (graphs.selectOptions.length === 0) {
                     setSelectedAction("new");
@@ -68,6 +72,7 @@ export function Base() {
             selectedAction={selectedAction}
             setSelectedAction={setSelectedAction}
             agphList={agphList}
+            feeDivider={feeDivider}
         ></DerivativesPage>
     } else {
         return <AssetsPage
