@@ -1,9 +1,7 @@
 import { Button, CircularProgress, Divider, Paper, Stack, TextField, Typography } from "@mui/material";
 import * as React from "react";
-import { convertDecimalNumberStringToRateAndDecimalShift } from "../../../lib/traverseDAG";
-import { NETWORK, TokenType } from "../../data";
-import { AbiPath, contractAddresses, getContract, handleNetworkSelect } from "../../web3";
-import { GraphStore_Interactor } from "../../web3/bindings";
+import { TokenType } from "../../data";
+
 import { Item } from "./Item";
 import { TokenSelectorAutocomplete } from "./SelectMenus";
 
@@ -50,21 +48,33 @@ function getDeploymentConstMessage(cost: string) {
 
 
 export function DeployNewPair(props: NewPairProps) {
+    function isAgphFromName(name: string): boolean {
+        return name.slice(0, 4) === "AGPH";
+    }
 
-    function getTokensForSelector(popAddress: string) {
+    function getTokensForSelector(popAddress: string, popIsAgph: boolean) {
         const list = props.valuetokens.concat(props.agphTokens);
         if (popAddress !== "") {
             const filteredList: TokenType[] = []
-
             for (let i = 0; i < list.length; i++) {
                 if (list[i].address !== popAddress) {
-                    filteredList.push(list[i]);
+                    // If the token we popping from the list is an AGPH
+                    if (popIsAgph) {
+                        // Then if the value I'm comparing it is nOT AGPH I push that
+                        // THis filters out all AGPH fron the list, so 2 can't be selected
+                        if (!isAgphFromName(list[i].name)) {
+                            filteredList.push(list[i])
+                        }
+                    } else {
+                        filteredList.push(list[i]);
+                    }
                 }
             }
             return filteredList;
         }
         return list;
     }
+
 
     function isDeployButtonDisabled() {
         if (
@@ -97,7 +107,7 @@ export function DeployNewPair(props: NewPairProps) {
                 }
                 props.setToken1(val)
             }}
-                tokens={getTokensForSelector(props.token2.address)} ></TokenSelectorAutocomplete>
+                tokens={getTokensForSelector(props.token2.address, isAgphFromName(props.token2.name))} ></TokenSelectorAutocomplete>
             <TextField
                 value={props.token1Amount}
                 onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,7 +127,7 @@ export function DeployNewPair(props: NewPairProps) {
                 props.setToken2(val)
 
             }} tokens={
-                getTokensForSelector(props.token1.address)
+                getTokensForSelector(props.token1.address, isAgphFromName(props.token1.name))
             }></TokenSelectorAutocomplete>
             <TextField
                 value={props.token2Amount}
