@@ -169,6 +169,11 @@ function getWeb3Provider() {
   return provider;
 }
 
+export function handleOnAccountChanged(handle: CallableFunction) {
+  //@ts-ignore
+  window.ethereum.on("accountsChanged", handle);
+}
+
 export function onBoardOrGetProvider(handleError: any): any {
   if (!web3Injected()) {
     handleError("You need to install metamask!");
