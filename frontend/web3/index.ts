@@ -77,8 +77,8 @@ export const contractAddresses: {
   [key in ChainIds]: { requestedTokens: string; graphStore: string };
 } = {
   [ChainIds.ARBITRUM_SEPOLINA_TESTNET]: {
-    requestedTokens: "0x8A0DF947c126574567592019aCf31dfd09E9A61e",
-    graphStore: "0x2960614E2cAB6f74ce1e46484d85daF48605793F",
+    requestedTokens: "0xe6E5cE46F43B742727D34eF125f00816BF503Ec5",
+    graphStore: "0x5f964A5c6518F90AcBA2272D2275FeACF2B73e5D",
   },
 };
 
