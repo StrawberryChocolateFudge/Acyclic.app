@@ -4,7 +4,7 @@ import { AgphSelectOptions, DEFAULT_AGPH_SELECT_OPTIONS, fetchAllGraphs, fetchAl
 import { getLoadingMessages, LoadingMessageType, LoadingPage } from "../stateless/LoadingIndicators";
 import { AGPHStruct } from "../../../lib/traverseDAG";
 import { DerivativesPage } from "../stateless/DerivativesPage";
-import { getLastSelectedActionFromLocalStorage, setLastSelectedActionToLocalStorage } from "../../storage/local";
+import { didJustDeploy, getLastSelectedActionFromLocalStorage, setLastSelectedActionToLocalStorage } from "../../storage/local";
 
 export enum CurrentPage {
     AssetsPage,
@@ -48,7 +48,14 @@ export function Base() {
                     setSelectedAction("new");
                     setLastSelectedActionToLocalStorage("new")
                 } else {
-                    setSelectedAction(getLastSelectedActionFromLocalStorage());
+                    if (didJustDeploy()) {
+                        //If the user just deployed a new pair, I get the last one
+                        setSelectedAction(graphs.selectOptions[graphs.selectOptions.length - 1].value);
+                    } else {
+                        // Else just navigate to the last selected
+                        setSelectedAction(getLastSelectedActionFromLocalStorage());
+
+                    }
                 }
 
                 setShowLoading(false);
