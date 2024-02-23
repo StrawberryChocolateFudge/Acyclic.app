@@ -6,6 +6,7 @@ import { ActionTabs } from "../stateless/ActionTabs";
 import { AbiPath, contractAddresses, getContract, handleNetworkSelect, requestAccounts, watchAsset, handleOnAccountChanged } from "../../web3";
 import { GraphStore_Interactor } from "../../web3/bindings";
 import { ApprovalInfo, APPROVALINFOPLACEHOLDER } from "../stateless/WrapInteractions";
+import { justDeployed } from "../../storage/local";
 export interface AGPRActionsProps {
     selected: string,
     valuetokens: TokenType[],
@@ -115,6 +116,7 @@ export function AGPHActionState(props: AGPRActionsProps) {
                 symbol: APGH.agphSymbol,
                 decimals: 18
             }, errorLogger);
+            justDeployed();
             refreshIn10Seconds();
         })
     }
@@ -132,16 +134,18 @@ export function AGPHActionState(props: AGPRActionsProps) {
             setApprovalInfo(info)
         }
 
-        if (wrapUnwrapTab === 0 && connectedWallet.isConnected) {
-            setApprovalInfo(APPROVALINFOPLACEHOLDER)
-            fetchBalance();
-            fetchChildTokensDetails();
-        }
+        if (props.selected !== "new") {
+            // Only run these if I'm not deploying a new contract
+            if (wrapUnwrapTab === 0 && connectedWallet.isConnected) {
+                setApprovalInfo(APPROVALINFOPLACEHOLDER)
+                fetchBalance();
+                fetchChildTokensDetails();
+            }
 
-        if (wrapUnwrapTab === 1 && connectedWallet.isConnected) {
-            fetchBalance();
+            if (wrapUnwrapTab === 1 && connectedWallet.isConnected) {
+                fetchBalance();
+            }
         }
-
 
     }, [wrapUnwrapTab, props.selected, connectedWallet])
 

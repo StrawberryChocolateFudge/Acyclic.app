@@ -1,3 +1,17 @@
+export function justDeployed() {
+  setItem("justdeployed", "true");
+}
+
+export function didJustDeploy() {
+  const didDeploy = getItem("justdeployed");
+
+  if (didDeploy === "true") {
+    setItem("justdeployed", "");
+    return true;
+  }
+  return false;
+}
+
 export function setLastSelectedActionToLocalStorage(to: string) {
   if (to.length === 0) {
     return;
