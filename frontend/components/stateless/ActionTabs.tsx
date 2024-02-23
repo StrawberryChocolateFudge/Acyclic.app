@@ -15,6 +15,7 @@ export interface ActionTabProps {
     connectedWallet: ConnectedWallet;
     selected: string;
     selectedbalance: string;
+    selectedaddress: string;
     agphList: AGPHStruct[];
     wrapUnwrapTab: number;
     setWrapUnwrapTab: (to: number) => void;
@@ -92,7 +93,7 @@ export function ActionTabs(props: ActionTabProps) {
                     tokenUnwrapAmount={props.tokenUnwrapAmount}
                     setTokenUnwrapAmount={(to: string) => props.setTokenUnwrapAmount(to)}
                     selectedBalance={props.selectedbalance}
-                    agphAddress={props.approvalInfo.spenderAddress}
+                    agphAddress={props.selectedaddress}
                     refetchSelectedBalance={props.refetchSelectedBalance}
                 ></UnWrap>
             </TabPanel>

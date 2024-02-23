@@ -50,7 +50,7 @@ export function AGPHActionState(props: AGPRActionsProps) {
 
     const [connectedWallet, setConnectedWallet] = React.useState<ConnectedWallet>({ address: "", isConnected: false });
     const [selectedbalance, setSelectedbalance] = React.useState("");
-
+    const [selectedaddress, setSelectedAddress] = React.useState("");
 
     const [approvalInfo, setApprovalInfo] = React.useState<ApprovalInfo>(APPROVALINFOPLACEHOLDER);
 
@@ -126,6 +126,8 @@ export function AGPHActionState(props: AGPRActionsProps) {
             const tokenAddr = getTokenAddressFromSelectedName(props.selected, props.agphTokens);
             const tokenBalance = await getBalanceOf(tokenAddr, connectedWallet.address)
             setSelectedbalance(tokenBalance);
+            setSelectedAddress(tokenAddr);
+
         }
 
         async function fetchChildTokensDetails() {
@@ -176,6 +178,7 @@ export function AGPHActionState(props: AGPRActionsProps) {
         const tokenAddr = getTokenAddressFromSelectedName(props.selected, props.agphTokens);
         const tokenBalance = await getBalanceOf(tokenAddr, connectedWallet.address)
         setSelectedbalance(tokenBalance);
+        setSelectedAddress(tokenAddr);
     }
 
 
@@ -222,5 +225,6 @@ export function AGPHActionState(props: AGPRActionsProps) {
         feeDivider={props.feeDivider}
         refetchApprovalInfo={refetchAllowanceApprovalInfo}
         refetchSelectedBalance={refetchSelectedBalance}
+        selectedaddress={selectedaddress}
     ></ActionTabs>
 }
