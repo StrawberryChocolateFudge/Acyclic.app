@@ -1,10 +1,10 @@
-import { Stack, Typography } from "@mui/material";
 import * as React from "react";
 import { AssetsPage } from "../stateless/AssetsPage";
 import { AgphSelectOptions, DEFAULT_AGPH_SELECT_OPTIONS, fetchAllGraphs, fetchAllSupportedAssets, supportedAssetsPlaceHolder } from "../../data";
-import { getLoadingMessages, LoadingMessageType, LoadingPage, RippleLoading } from "../stateless/LoadingIndicators";
+import { getLoadingMessages, LoadingMessageType, LoadingPage } from "../stateless/LoadingIndicators";
 import { AGPHStruct } from "../../../lib/traverseDAG";
 import { DerivativesPage } from "../stateless/DerivativesPage";
+import { getLastSelectedActionFromLocalStorage, setLastSelectedActionToLocalStorage } from "../../storage/local";
 
 export enum CurrentPage {
     AssetsPage,
@@ -46,8 +46,9 @@ export function Base() {
 
                 if (graphs.selectOptions.length === 0) {
                     setSelectedAction("new");
+                    setLastSelectedActionToLocalStorage("new")
                 } else {
-                    setSelectedAction(graphs.selectOptions[graphs.selectOptions.length - 1].value);
+                    setSelectedAction(getLastSelectedActionFromLocalStorage());
                 }
 
                 setShowLoading(false);
@@ -57,6 +58,10 @@ export function Base() {
         }
         loadGraphs();
     }, []);
+
+    React.useEffect(() => {
+        setLastSelectedActionToLocalStorage(selectedAction);
+    }, [selectedAction])
 
     if (showLoading) {
         return <LoadingPage
