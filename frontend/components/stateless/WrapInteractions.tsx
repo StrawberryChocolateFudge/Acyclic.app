@@ -14,6 +14,7 @@ export type ApprovalInfo = {
     token1DecimalShift: number;
     token1Address: string;
 
+    token1ERC20Decimals: number;
 
     token2Allowance: string;
     token2Balance: string;
@@ -21,6 +22,10 @@ export type ApprovalInfo = {
     token2Rate: number;
     token2DecimalShift: number;
     token2Address: string;
+
+    token2ERC20Decimals: number;
+
+
 
     spenderAddress: string;
 }
@@ -39,7 +44,11 @@ export const APPROVALINFOPLACEHOLDER = {
     token2Rate: 0,
     token2DecimalShift: 0,
     token2Address: "",
-    spenderAddress: ""
+    spenderAddress: "",
+
+    token1ERC20Decimals: 18,
+    token2ERC20Decimals: 18
+
 }
 
 interface WrapProps {
@@ -161,10 +170,11 @@ export function Wrap(props: WrapProps) {
 
                 props.setTokenMintAmount(event.target.value);
             }} type="number" label="Mint Amount" variant="outlined" sx={{ width: "100%", marginTop: "10px" }}></TextField>
-        </Paper>
-        <Typography variant="subtitle1" component="div">To deposit tokens first you need to approve spend for both!</Typography>
+            <Typography variant="subtitle1" component="div">To mint new tokens, first you need to deposit the backing. Approve spend for both then if you own the required balance click deposit.</Typography>
 
-        <Item sx={{ marginBottom: "10px" }}>
+        </Paper>
+
+        <Item sx={{ marginBottom: "10px", marginTop: "10px" }}>
             <Stack flexDirection={"row"} justifyContent="flex-start">
 
                 <Button disabled={isApproveDisabled()} onClick={async () => await onApprove1()} variant="contained">Approve</Button>
@@ -181,6 +191,7 @@ export function Wrap(props: WrapProps) {
                 balance={props.approvalInfo.token1Balance}
                 wrapFeeDetails={token1WrapFeeDetails}
                 tokenAddress={props.approvalInfo.token1Address}
+                decimals={props.approvalInfo.token1ERC20Decimals}
             ></TokenWrapDetails>
         </Item>
 
@@ -197,6 +208,7 @@ export function Wrap(props: WrapProps) {
                 balance={props.approvalInfo.token2Balance}
                 wrapFeeDetails={token2WrapFeeDetails}
                 tokenAddress={props.approvalInfo.token2Address}
+                decimals={props.approvalInfo.token2ERC20Decimals}
             ></TokenWrapDetails>
         </Item>
         <Button onClick={async () => await onDeposit()} disabled={depositDisabled()} variant="contained" sx={{ marginTop: "20px" }}>Deposit</Button>
@@ -251,7 +263,6 @@ export function UnWrap(props: UnWrapProps) {
         <Paper sx={{ padding: "20px" }}>
             <Typography variant="body1" component="div">Unwrap a token. Burn it and recieve the assets backing it.</Typography>
             <TextField value={props.tokenUnwrapAmount} onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                console.log("onchange runs on unwrap")
                 if (isNaN(parseFloat(event.target.value)) && event.target.value !== "") {
                     return;
                 }

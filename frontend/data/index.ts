@@ -233,6 +233,9 @@ export async function getAllowanceAndBalanceOfTokens(
     spenderContract,
   );
 
+  const token1ERC20Decimals = await ERC20.decimals(token1Contract);
+  const token2ERC20Decimals = await ERC20.decimals(token2Contract);
+
   return {
     token1Balance: formatEther(token1Balance),
     token2Balance: formatEther(token2Balance),
@@ -247,6 +250,8 @@ export async function getAllowanceAndBalanceOfTokens(
     token2DecimalShift: token2DecimalShift,
     token2Address: token2Addr,
     spenderAddress: spenderContract,
+    token1ERC20Decimals,
+    token2ERC20Decimals
   };
 }
 

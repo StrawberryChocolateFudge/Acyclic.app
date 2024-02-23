@@ -1,7 +1,8 @@
-import { Accordion, AccordionDetails, AccordionSummary, Paper, TableContainer, Typography, Table, TableHead, TableRow, TableCell, TableBody, CircularProgress } from "@mui/material";
-import { ArrowDownward } from "@mui/icons-material";
+import { IconButton, Accordion, AccordionDetails, AccordionSummary, Paper, TableContainer, Typography, Table, TableHead, TableRow, TableCell, TableBody, CircularProgress, Button, Stack, Tooltip } from "@mui/material";
+import { ArrowDownward, AddCard } from "@mui/icons-material";
 import * as React from "react";
 import { WrapFeeDetails } from "./WrapInteractions";
+import { watchAsset } from "../../web3";
 
 
 export interface TokenWrapDetailsProps {
@@ -10,6 +11,8 @@ export interface TokenWrapDetailsProps {
     balance: string;
     wrapFeeDetails: WrapFeeDetails | undefined;
     tokenAddress: string;
+
+    decimals: number;
 }
 
 export function TokenWrapDetails(props: TokenWrapDetailsProps) {
@@ -19,6 +22,15 @@ export function TokenWrapDetails(props: TokenWrapDetailsProps) {
             return "Enter a mint amount"
         }
         return data;
+    }
+
+    async function watch() {
+        await watchAsset(
+            {
+                address: props.tokenAddress,
+                symbol: props.tokenName,
+                decimals: props.decimals
+            }, console.error);
     }
 
     return <Accordion>
@@ -43,6 +55,9 @@ export function TokenWrapDetails(props: TokenWrapDetailsProps) {
 
                                 <TableCell component="th" scope="row">
                                     {props.tokenName}
+                                    <Tooltip title="Add to wallet">
+                                        <IconButton sx={{ width: "50px", height: "50px" }} size="small" onClick={async () => await watch()}><AddCard /></IconButton>
+                                    </Tooltip>
                                 </TableCell>
 
                             </TableRow>
@@ -54,7 +69,6 @@ export function TokenWrapDetails(props: TokenWrapDetailsProps) {
                                 <TableCell component="th" scope="row">
                                     {props.tokenAddress}
                                 </TableCell>
-
                             </TableRow>
                             <TableRow
                                 key={"balancerow1"}

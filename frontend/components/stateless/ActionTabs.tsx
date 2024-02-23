@@ -1,5 +1,6 @@
-import { Box, Stack, Tab, Tabs, Typography } from "@mui/material";
+import { Tooltip, Box, Stack, Tab, Tabs, Typography, IconButton } from "@mui/material";
 import * as React from "react";
+import AddCardIcon from '@mui/icons-material/AddCard';
 import { TokenType } from "../../data";
 import { AGPHStruct } from "../../../lib/traverseDAG";
 import { ApprovalInfo, UnWrap, Wrap } from "../stateless/WrapInteractions";
@@ -7,6 +8,7 @@ import GraphDialog from "../stateful/GraphDialogState";
 import { ConnectedWallet } from "../stateful/ActionState";
 import { ConnectWallet } from "./ConnectWallet";
 import { Item } from "./Item";
+import { watchAsset } from "../../web3";
 
 
 export interface ActionTabProps {
@@ -37,6 +39,15 @@ export interface ActionTabProps {
 
 export function ActionTabs(props: ActionTabProps) {
 
+    async function addToWallet() {
+        await watchAsset({
+            address: props.approvalInfo.spenderAddress,
+            symbol: props.selected,
+            decimals: 18, // AGPH has 18 decimals always!
+        }, console.error);
+    }
+
+
     return <Box sx={{ width: '100%' }}>
         <Box>
             <GraphDialog symbol={props.selected} agpList={props.agphList}></GraphDialog>
@@ -44,7 +55,7 @@ export function ActionTabs(props: ActionTabProps) {
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs value={props.wrapUnwrapTab} onChange={(event: React.SyntheticEvent, newValue: number) => {
                 props.setWrapUnwrapTab(newValue);
-            }} aria-label="basic tabs example">
+            }} aria-label="wrap unwrap tabs">
                 <Tab label="Wrap" />
                 <Tab label="Unwrap" />
 
@@ -55,6 +66,12 @@ export function ActionTabs(props: ActionTabProps) {
                 <Typography variant="body1" component="div">Connected Wallet</Typography>
                 <Typography variant="body1" component="div">{props.connectedWallet.address}</Typography>
                 <Typography variant="body1" component="div">{props.selected} Balance: {props.selectedbalance} </Typography>
+                <Stack flexDirection="row" justifyContent="center">
+                    <Tooltip title="Add to wallet">
+                        <IconButton sx={{ width: "50px", height: "50px" }} size="small" onClick={async () => await addToWallet()} ><AddCardIcon /></IconButton>
+                    </Tooltip>
+                </Stack>
+
             </Stack>
         </Item> : null}
 
