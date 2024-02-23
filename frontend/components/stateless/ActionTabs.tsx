@@ -20,7 +20,6 @@ export interface ActionTabProps {
     token2: TokenType;
     tokenMintAmount: string;
     setTokenMintAmount: (to: string) => void;
-    tokenDepositCost: TokenDepositCost;
 
     tokenUnwrapAmount: string;
     setTokenUnwrapAmount: (to: string) => void;
@@ -28,29 +27,11 @@ export interface ActionTabProps {
 
     approvalInfo: ApprovalInfo;
 
-    feeDivider:number;
+    feeDivider: number;
 
     refetchApprovalInfo: () => Promise<void>
-}
 
-export type TokenDepositCost = {
-    wrappedAmount: string;
-    token1DepositFee: string;
-    token1ValueWrapped: string;
-    token1TotalDeposit: string;
-    token2DepositFee: string;
-    token2ValueWrapped: string;
-    token2TotalDeposit: string;
-}
-
-export const TOKENDEPOSITCOSTPLACEHOLDER = {
-    wrappedAmount: "",
-    token1DepositFee: "",
-    token1ValueWrapped: "",
-    token1TotalDeposit: "",
-    token2DepositFee: "",
-    token2ValueWrapped: "",
-    token2TotalDeposit: ""
+    refetchSelectedBalance: () => Promise<void>
 }
 
 
@@ -84,7 +65,6 @@ export function ActionTabs(props: ActionTabProps) {
                     selected={props.selected}
                     tokenMintAmount={props.tokenMintAmount}
                     setTokenMintAmount={(to: string) => props.setTokenMintAmount(to)}
-                    tokenDepositCost={props.tokenDepositCost}
                     approvalInfo={props.approvalInfo}
                     feeDivider={props.feeDivider}
                     refetchApprovalInfo={props.refetchApprovalInfo}
@@ -96,7 +76,9 @@ export function ActionTabs(props: ActionTabProps) {
                     connectedWallet={props.connectedWallet}
                     tokenUnwrapAmount={props.tokenUnwrapAmount}
                     setTokenUnwrapAmount={(to: string) => props.setTokenUnwrapAmount(to)}
-                    
+                    selectedBalance={props.selectedbalance}
+                    agphAddress={props.approvalInfo.spenderAddress}
+                    refetchSelectedBalance={props.refetchSelectedBalance}
                 ></UnWrap>
             </TabPanel>
             : <ConnectWallet connectWalletClick={props.connectWalletClick}></ConnectWallet>

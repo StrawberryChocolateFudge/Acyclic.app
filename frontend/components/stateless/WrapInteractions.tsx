@@ -1,9 +1,7 @@
 import { Button, Paper, Stack, TextField, Typography } from "@mui/material";
-import { parseEther } from "ethers/lib/utils";
 import * as React from "react";
-import { approveAllowance, calculateApproveAmount, doDepositAction, TokenType } from "../../data";
+import { approveAllowance, calculateApproveAmount, doDepositAction, doWithdrawAction } from "../../data";
 import { ConnectedWallet } from "../stateful/ActionState";
-import { TokenDepositCost } from "./ActionTabs";
 import { Item } from "./Item";
 import { TokenWrapDetails } from "./TokenWrapDetails";
 
@@ -49,7 +47,6 @@ interface WrapProps {
     selected: string
     tokenMintAmount: string;
     setTokenMintAmount: (to: string) => void;
-    tokenDepositCost: TokenDepositCost;
     approvalInfo: ApprovalInfo;
     feeDivider: number
     refetchApprovalInfo: () => Promise<void>
@@ -210,30 +207,60 @@ interface UnWrapProps {
     connectedWallet: ConnectedWallet;
     tokenUnwrapAmount: string;
     setTokenUnwrapAmount: (to: string) => void;
+    selectedBalance: string;
+    agphAddress: string;
+    refetchSelectedBalance: () => Promise<void>
+
 }
 
 export function UnWrap(props: UnWrapProps) {
-
     function isUnwrapDisabled() {
+
+        if (props.selectedBalance === "") {
+            return true;
+        }
+
+        if (isNaN(parseFloat(props.selectedBalance))) {
+            return true;
+        }
+
+        if (props.tokenUnwrapAmount === "") {
+            return true;
+        }
+
+        if (isNaN(parseFloat(props.tokenUnwrapAmount))) {
+            return true;
+        }
+
+        if (parseFloat(props.selectedBalance) < parseFloat(props.tokenUnwrapAmount)) {
+            return true;
+        }
 
         return false;
     }
+
+    async function doUnwrap() {
+        await doWithdrawAction(props.agphAddress, props.tokenUnwrapAmount).then(async () => {
+            await props.refetchSelectedBalance();
+        });
+    }
+
 
 
     return <Stack direction="column" justifyContent="center">
         <Paper sx={{ padding: "20px" }}>
             <Typography variant="body1" component="div">Unwrap a token. Burn it and recieve the assets backing it.</Typography>
             <TextField value={props.tokenUnwrapAmount} onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-
+                console.log("onchange runs on unwrap")
                 if (isNaN(parseFloat(event.target.value)) && event.target.value !== "") {
                     return;
                 }
 
                 props.setTokenUnwrapAmount(event.target.value);
-            }} type="number" label="Unwrap Amount" variant="outlined" sx={{ width: "100%", marginTop: "10px" }} />
+            }} required type="number" label="Unwrap Amount" variant="outlined" sx={{ width: "100%", marginTop: "10px" }} />
         </Paper>
         <Typography variant="subtitle1" component="div">After unwrapping you will have both tokens transferred to your account!</Typography>
-        <Button disabled={isUnwrapDisabled()} variant="contained" sx={{ marginTop: "20px" }}>Unwrap</Button>
+        <Button onClick={async () => await doUnwrap()} disabled={isUnwrapDisabled()} variant="contained" sx={{ marginTop: "20px" }}>Unwrap</Button>
     </Stack>
 }
 

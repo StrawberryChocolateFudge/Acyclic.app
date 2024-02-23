@@ -1,8 +1,8 @@
 import * as React from "react";
 import { getDeploymentCostsForTokens, supportedAssetsPlaceHolder, TokenType, NETWORK, getTokenAddressFromSelectedName, AgphSelectOptions, getBalanceOf, getAllowanceAndBalanceOfTokens } from "../../data";
-import { AGPHStruct, calculateDepositFeeForToken, convertDecimalNumberStringToRateAndDecimalShift } from "../../../lib/traverseDAG";
+import { AGPHStruct, convertDecimalNumberStringToRateAndDecimalShift } from "../../../lib/traverseDAG";
 import { DeployNewPair, PairDeploymentSuccess } from "../stateless/DeployNewPair";
-import { ActionTabs, TokenDepositCost, TOKENDEPOSITCOSTPLACEHOLDER } from "../stateless/ActionTabs";
+import { ActionTabs } from "../stateless/ActionTabs";
 import { AbiPath, contractAddresses, getContract, handleNetworkSelect, requestAccounts, watchAsset, handleOnAccountChanged } from "../../web3";
 import { GraphStore_Interactor } from "../../web3/bindings";
 import { ApprovalInfo, APPROVALINFOPLACEHOLDER } from "../stateless/WrapInteractions";
@@ -40,7 +40,6 @@ export function AGPHActionState(props: AGPRActionsProps) {
 
     const [tokenMintAmount, setTokenMintAmount] = React.useState("");
 
-    const [tokenDepositCost, setTokenDepositCost] = React.useState<TokenDepositCost>(TOKENDEPOSITCOSTPLACEHOLDER)
 
     const [tokenUnwrapAmount, setTokenUnwrapAmount] = React.useState("");
 
@@ -163,24 +162,16 @@ export function AGPHActionState(props: AGPRActionsProps) {
     }, [token1, token2])
 
 
-
-
-
-    React.useEffect(() => {
-
-        console.log("token unwrap amount changed to", tokenUnwrapAmount)
-
-
-
-
-
-
-    }, [tokenUnwrapAmount])
-
     async function refetchAllowanceApprovalInfo() {
         const agphAddr = getTokenAddressFromSelectedName(props.selected, props.agphTokens);
         const info = await getAllowanceAndBalanceOfTokens(connectedWallet.address, agphAddr);
         setApprovalInfo(info)
+    }
+
+    async function refetchSelectedBalance() {
+        const tokenAddr = getTokenAddressFromSelectedName(props.selected, props.agphTokens);
+        const tokenBalance = await getBalanceOf(tokenAddr, connectedWallet.address)
+        setSelectedbalance(tokenBalance);
     }
 
 
@@ -221,11 +212,11 @@ export function AGPHActionState(props: AGPRActionsProps) {
         token2={token2}
         tokenMintAmount={tokenMintAmount}
         setTokenMintAmount={setTokenMintAmount}
-        tokenDepositCost={tokenDepositCost}
         tokenUnwrapAmount={tokenUnwrapAmount}
         setTokenUnwrapAmount={(to: string) => setTokenUnwrapAmount(to)}
         approvalInfo={approvalInfo}
         feeDivider={props.feeDivider}
         refetchApprovalInfo={refetchAllowanceApprovalInfo}
+        refetchSelectedBalance={refetchSelectedBalance}
     ></ActionTabs>
 }

@@ -308,3 +308,13 @@ export async function doDepositAction(agphAddress: string, amount: string) {
 
   await AGPH_Interactor.wrapAGPH(agphContract, amount);
 }
+
+export async function doWithdrawAction(agphAddress: string, amount: string) {
+  const provider = await handleNetworkSelect(NETWORK, console.error);
+  const agphContract = await getContract(
+    provider,
+    agphAddress,
+    "/AGPH.json",
+  );
+  await AGPH_Interactor.unwrapAGPH(agphContract, amount);
+}
