@@ -65,12 +65,10 @@ export function ActionTabs(props: ActionTabProps) {
             <Stack flexDirection="column" justifyContent="center">
                 <Typography variant="body1" component="div">Connected Wallet</Typography>
                 <Typography variant="body1" component="div">{props.connectedWallet.address}</Typography>
-                <Typography variant="body1" component="div">{props.selected} Balance: {props.selectedbalance} </Typography>
-                <Stack flexDirection="row" justifyContent="center">
-                    <Tooltip title="Add to wallet">
-                        <IconButton sx={{ width: "50px", height: "50px" }} size="small" onClick={async () => await addToWallet()} ><AddCardIcon /></IconButton>
-                    </Tooltip>
-                </Stack>
+                <Typography variant="body1" component="div">  <Tooltip title="Add to wallet">
+                    <IconButton sx={{ width: "50px", height: "50px" }} size="small" onClick={async () => await addToWallet()} ><AddCardIcon /></IconButton>
+                </Tooltip>{props.selected} Balance: {props.selectedbalance} </Typography>
+
 
             </Stack>
         </Item> : null}
