@@ -153,7 +153,7 @@ export function generateDag(
       name: symbol,
       attributes: {
         Amount: assetAmount,
-        Address: element.agphAddress,
+        Address: shortenAddress(element.agphAddress),
       },
       children: findChildren(
         agphList,
@@ -209,7 +209,7 @@ function findChildren(
           element.token1Rate,
           element.token1DecimalShift,
         ),
-        Address: element.token1Addr,
+        Address: shortenAddress(element.token1Addr),
       },
       children: findChildren(
         agphList,
@@ -227,7 +227,7 @@ function findChildren(
           element.token2Rate,
           element.token2DecimalShift,
         ),
-        Address: element.token2Addr,
+        Address: shortenAddress(element.token2Addr),
       },
       children: findChildren(
         agphList,
@@ -404,4 +404,9 @@ export function buildToken2_RegisterAgphParams(
     token2Rate: rate,
     token2DecimalShift: shift,
   };
+}
+
+function shortenAddress(addr: string) {
+  return addr.substring(0, 6) + "..." +
+    addr.substring(addr.length - 6, addr.length);
 }
