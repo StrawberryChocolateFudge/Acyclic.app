@@ -101,7 +101,7 @@ export async function RequestTestnetTokens() {
   const EURAddress = "0xe1B20C09736C5ac96d2E1204536b95084915a4Ce";
   const WTokenAddress = "0x64274Fc42aD8e327Eb63E96e1BC7f43952D78D36";
 
-  const requestTokensAddress = "0x8A0DF947c126574567592019aCf31dfd09E9A61e";
+  const requestTokensAddress = "0xe6E5cE46F43B742727D34eF125f00816BF503Ec5";
 
   const requestTokensFactory = await ethers.getContractFactory(
     "RequestedTokens",
@@ -109,13 +109,14 @@ export async function RequestTestnetTokens() {
   const requestedTokens = await requestTokensFactory.attach(
     requestTokensAddress,
   );
-
-  await requestedTokens.requestNewToken(WBTCAddress);
-  await requestedTokens.requestNewToken(USDAddress);
+  await requestedTokens.requestNewToken(WBTCAddress).catch((err) => {
+    console.log(err);
+  });
+  await requestedTokens.requestNewToken(USDAddress).catch((err) => {
+    console.log(err);
+  });
   await requestedTokens.requestNewToken(EURAddress);
   await requestedTokens.requestNewToken(WTokenAddress);
-
-  console.log("token requesting done;");
 }
 
 export async function AcceptRequestTestnetTokens() {
@@ -125,7 +126,7 @@ export async function AcceptRequestTestnetTokens() {
   const EURAddress = "0xe1B20C09736C5ac96d2E1204536b95084915a4Ce";
   const WTokenAddress = "0x64274Fc42aD8e327Eb63E96e1BC7f43952D78D36";
 
-  const requestTokensAddress = "0x8A0DF947c126574567592019aCf31dfd09E9A61e";
+  const requestTokensAddress = "0xe6E5cE46F43B742727D34eF125f00816BF503Ec5";
 
   const requestTokensFactory = await ethers.getContractFactory(
     "RequestedTokens",
@@ -157,16 +158,13 @@ main().catch((error) => {
 });
 
 // Arbitrum Sepolia testnet
-// Deploying RequestedTokens
-// Requested Tokens Deployed to  0x8A0DF947c126574567592019aCf31dfd09E9A61e
-// Deploying FactoryContractVerifier
-// FactoryContractVerifier deployed to: 0xb4643353035d234589F86456aAC98E5AF722b921
-// Deploying AGPH
-// AGPH deployed to:  0x02Def58cdab8b5e6606e9fF74187baD098112be3
-// Deploying GraphStore
-// GraphStore deployed to 0x2960614E2cAB6f74ce1e46484d85daF48605793F
 
+// Requested Tokens Deployed to  0xe6E5cE46F43B742727D34eF125f00816BF503Ec5
+// FactoryContractVerifier deployed to: 0x821483F5359c399cac592D37112E4f240672Ed89
+// AGPH deployed to:  0xA923e620645A69487424d916f6d7b1a441AeE0ca
+// GraphStore deployed to 0x5f964A5c6518F90AcBA2272D2275FeACF2B73e5D
 // Deploying testnet tokens
+
 // WBTC address:  0x1FD17CeAed82819593518AFfB9D289fE5169DCc1
 // USD address  0xA3e7617C85c7Bd6faE230fC3A785005a81d55784
 // EUR address  0xe1B20C09736C5ac96d2E1204536b95084915a4Ce
