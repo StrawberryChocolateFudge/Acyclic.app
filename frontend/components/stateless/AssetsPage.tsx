@@ -22,7 +22,6 @@ export function AssetsPage(props: AssetsPageProps) {
         paddingLeft: "20px",
         paddingRight: "20px"
     }}>
-        <WeAreOnTestnet></WeAreOnTestnet>
         <Stack direction="row" justifyContent="space-between">
             <div>
                 <img alt="Acyclic" src="/imgs/Acycliclogo.webp" width="200px" style={{ boxShadow: "rgba(0, 0, 0, 0.35) 0px 5px 15px" }} />
@@ -36,6 +35,7 @@ export function AssetsPage(props: AssetsPageProps) {
             >Derivatives</Button>
         </Stack>
         <AssetsActions tokens={props.supportedTokens}></AssetsActions>
+
     </Paper >
 }
 
@@ -58,7 +58,9 @@ export function AssetsActions(props: AssetsActionsProps) {
             key={option.name}
             sx={{ '& > img': { mr: 2, flexShrink: 0 } }} {...props}>
             <TokenDisplay name={option.name} address={option.address}></TokenDisplay>
-        </Box>)}</Paper>
+        </Box>)}
+        <WeAreOnTestnet></WeAreOnTestnet>
+    </Paper>
 }
 
 export interface TokenDisplayProps {

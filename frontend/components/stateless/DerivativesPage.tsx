@@ -26,8 +26,6 @@ export function DerivativesPage(props: DerivativesPageProps) {
         paddingLeft: "20px",
         paddingRight: "20px"
     }}>
-        <WeAreOnTestnet></WeAreOnTestnet>
-
         <Stack direction="row" justifyContent="space-between">
 
             <div>
