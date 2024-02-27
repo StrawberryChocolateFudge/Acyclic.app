@@ -276,7 +276,7 @@ sudo certbot --nginx
 
 ```
 
-Install nodejs
+Install nodejs for this, switch users, do not run npm as root
 
 ``` 
 sudo apt-get install -y ca-certificates curl gnupg
@@ -299,14 +299,15 @@ Clone the git repository and build it
 ``` 
 git clone https://github.com/StrawberryChocolateFudge/Acyclic.app.git
 
+npm install
+npx hardhat compile
+
 npm run build
-npm run copy
 ```
-It will build the repo and copy the assets to dist.
+It will build the repo and copy the assets.
 
-This will copy the built dist directory to be served by nginx:
+Switch back to root and run
 
-```
-npm run toNginx
+`npm run toNginx`
 
-```
+to copy the files to be served by Nginx
