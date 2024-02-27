@@ -5,8 +5,9 @@
   "scripts": {
     "test": "npx hardhat test",
     "dev": "parcel frontend/index.html",
-    "build": "parcel build frontend/index.html",
-    "copy": "sh copyToDist.sh"
+    "build": "parcel build frontend/index.html && npm run copy",
+    "copy": "sh copyToDist.sh",
+    "toNginx":"sh copyToNginx.sh"
   },
   "keywords": [],
   "author": "",

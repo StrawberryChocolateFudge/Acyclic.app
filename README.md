@@ -246,3 +246,67 @@ THIS IS AN EXAMPLE FROM THE UNIT TESTS.
   }
 }
 ```
+
+## Hosting
+
+Hosted on a VPS with NGINX, it's a static site but serving is the best option as I don't have to rely on CDN caches to store the site.. I used cloudflare pages before but that is unrelyable.
+
+VPS server setup
+```
+sudo apt update
+
+sudo apt upgrade 
+adduser app
+
+usermod -aG sudo app
+
+sudo apt install nginx
+
+```
+
+Snap is needed due to certbot install
+```
+sudo apt install snapd
+
+sudo snap install --classic certbot
+
+sudo ln -s /snap/bin/certbot /usr/bin/certbot
+
+sudo certbot --nginx
+
+```
+
+Install nodejs
+
+``` 
+sudo apt-get install -y ca-certificates curl gnupg
+
+sudo mkdir -p /etc/apt/keyrings
+
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+
+NODE_MAJOR=20
+
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+
+sudo apt-get update
+
+sudo apt-get install nodejs -y
+
+```
+Clone the git repository and build it
+
+``` 
+git clone https://github.com/StrawberryChocolateFudge/Acyclic.app.git
+
+npm run build
+npm run copy
+```
+It will build the repo and copy the assets to dist.
+
+This will copy the built dist directory to be served by nginx:
+
+```
+npm run toNginx
+
+```
