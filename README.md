@@ -160,6 +160,7 @@ This method is used to simplify calulating wrapping and unwrapping while using W
 
 You will find the contracts in the /contracts folder. The AGPH.sol and the GraphStore.sol contains the main contracts.
 
+Ignore the MOCK directory. It contains a testnet ERC20 contract anyone can mint, it won't be deployed to mainnet.
 
 ### Computing the DAG
 
