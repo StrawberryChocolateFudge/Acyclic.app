@@ -105,7 +105,7 @@ It can reduce gas costs of transfering your portfolio, or selling them.
 
 The protocol is made up of 3 smart contracts, the RequestedTokens, GraphStore and the AGPH token contract library.
 
-The RequestedTokens serves as a way to federate what tokens can be used, to avoid a malicious token to make it into the list. The selection of the requested tokens could be turned into a DAO later, or it might go unchecked and only a fixed amount of assets will be available. In this case, the protocol will be fully decentralized and unalterable.
+The RequestedTokens serves as a way to federate what tokens can be used, to avoid a malicious token to make it into the list.
 
 GraphStore is the contract that tracks and deploys all AGPH token contracts. It stores a list that can be used to compute the DAG on the client for tokens.
 Token contracts can be deployed by the Graphstore by anyone, however only Accepted tokens can be used and the deployment has a fee.
@@ -149,6 +149,17 @@ Multiply 1 AGPH with the Rate 1, then divide by 10**3. This will shift the decim
 Then multiply 1 AGPH token by 100 and don't shift the decimal places.
 
 This method is used to simplify calulating wrapping and unwrapping while using WEI only for calculations, and the front end provides a simplified user experience to make it's use more straight forward.
+
+
+## How to audit the smart contracts
+
+1. Git clone this repository
+2. Install dependencies : `npm install`
+3. Compile the contracts:  `npx hardhat compile`
+4. Run the tests `npm run test`
+
+You will find the contracts in the /contracts folder. The AGPH.sol and the GraphStore.sol contains the main contracts.
+
 
 ### Computing the DAG
 
@@ -311,3 +322,4 @@ Switch back to root and run
 `npm run toNginx`
 
 to copy the files to be served by Nginx
+
